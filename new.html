@@ -1,0 +1,1571 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pulse Survey — GummyGum</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   GUMMYGUM · PULSE SURVEY — visual system
+   Bold black outlines, hard offset shadows, warm cream + orange.
+   Flow/screens/logic unchanged — this is a skin, not a rebuild.
+   ============================================================ */
+:root{
+  --bg:#FAF8FF;
+  --surface:#FFFFFF;
+  --surface-2:#F6F1FC;
+  --ink:#1B1224;
+  --ink-soft:#5B4F66;
+  --ink-faint:#9C90A8;
+
+  --accent:#7A4FE0;
+  --accent-dark:#5C33B0;
+  --accent-soft:#EFE4FB;
+  --accent-tint:#D9C2F5;
+
+  --gray-soft:#EFEAF7;
+  --gray-ink:#6B5F78;
+
+  --mint:#3FA66B;
+  --mint-soft:#DFF3E7;
+
+  --grape:#5B3E99;
+  --grape-soft:#E6DCF7;
+
+  --amber:#9457C7;
+  --amber-soft:#F1E4FA;
+
+  --line:#1B1224;
+  --line-soft:#E8E0F5;
+
+  --radius-s:10px;
+  --radius-m:18px;
+  --radius-l:26px;
+  --radius-xl:34px;
+
+  --bw:2px;
+  --bw-lg:2.5px;
+
+  --shadow-hard:4px 4px 0 var(--ink);
+  --shadow-hard-sm:3px 3px 0 var(--ink);
+  --shadow-hard-lg:6px 6px 0 var(--ink);
+  --shadow-soft:0 10px 26px rgba(20,17,16,.08);
+
+  --dur-1:150ms; --dur-2:230ms; --dur-3:400ms;
+  --ease-out: cubic-bezier(.19,1,.22,1);
+  --ease-spring: cubic-bezier(.34,1.56,.64,1);
+
+  --font-display:'Baloo 2', sans-serif;
+  --font-body:'Inter', sans-serif;
+  --font-mono:'IBM Plex Mono', monospace;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:var(--bg); color:var(--ink); font-family:var(--font-body);
+  -webkit-font-smoothing:antialiased; font-size:15px; line-height:1.55;
+  background-image:
+    radial-gradient(circle at 8% 10%, rgba(245,129,31,.05), transparent 40%),
+    radial-gradient(circle at 92% 85%, rgba(245,129,31,.05), transparent 40%);
+}
+h1,h2,h3,h4{font-family:var(--font-display); margin:0; font-weight:700; letter-spacing:-0.01em;}
+p{margin:0;}
+button{font-family:var(--font-body); cursor:pointer;}
+:focus-visible{outline:3px solid var(--accent); outline-offset:2px; border-radius:4px;}
+::selection{background:var(--accent-tint);}
+code{font-family:var(--font-mono);}
+
+/* faint background letters/icons, decorative texture */
+.bg-deco{position:fixed; inset:0; z-index:0; pointer-events:none; overflow:hidden;}
+.bg-deco span{
+  position:absolute; font-family:var(--font-display); font-weight:800; color:var(--ink);
+  opacity:.035; user-select:none;
+}
+
+/* ============ TOP SHELL ============ */
+#topbar{
+  display:flex; align-items:center; justify-content:space-between; padding:16px 30px;
+  background:var(--surface); border-bottom:var(--bw) solid var(--ink); position:sticky; top:0; z-index:30;
+}
+.tb-left{display:flex; align-items:center; gap:16px;}
+.tb-mark{display:flex; align-items:center; gap:10px;}
+.tb-logo{width:30px; height:30px;}
+.tb-name{font-family:var(--font-display); font-weight:800; font-size:19px;}
+.tb-crumb{font-family:var(--font-body); font-weight:600; font-size:12px; color:var(--ink-soft); letter-spacing:.02em; display:flex; align-items:center; gap:6px;}
+.tb-crumb b{color:var(--ink); font-weight:800;}
+.view-switch{display:flex; background:var(--surface); border:var(--bw) solid var(--ink); border-radius:99px; padding:4px; gap:3px;}
+.view-switch button{border:none; background:none; padding:8px 16px; border-radius:99px; font-size:12.5px; font-weight:800; color:var(--ink-soft); transition:all var(--dur-2) var(--ease-out);}
+.view-switch button.active{background:var(--accent); color:#fff; box-shadow:inset 0 0 0 var(--bw) var(--ink);}
+.view-switch-label{font-size:9.5px; font-weight:800; color:var(--ink-faint); text-transform:uppercase; letter-spacing:.08em; margin-right:4px;}
+
+#app{min-height:calc(100vh - 66px); position:relative; z-index:1;}
+.pane{padding:44px 32px 100px; max-width:1140px; margin:0 auto;}
+.pane-narrow{max-width:740px;}
+.fade-in{animation:fadeIn var(--dur-3) var(--ease-out);}
+@keyframes fadeIn{from{opacity:0; transform:translateY(10px);} to{opacity:1; transform:translateY(0);}}
+
+/* ============ BUTTONS ============ */
+.btn{
+  display:inline-flex; align-items:center; gap:8px; padding:13px 24px; border-radius:99px;
+  border:var(--bw-lg) solid var(--ink); font-size:14px; font-weight:800; font-family:var(--font-body);
+  box-shadow:var(--shadow-hard-sm); transition:transform var(--dur-1) var(--ease-out), box-shadow var(--dur-1) var(--ease-out); white-space:nowrap;
+  background:var(--surface); color:var(--ink);
+}
+.btn:hover{transform:translate(-1px,-1px); box-shadow:5px 5px 0 var(--ink);}
+.btn:active{transform:translate(2px,2px); box-shadow:1px 1px 0 var(--ink);}
+.btn-primary{background:var(--accent); color:var(--ink);}
+.btn-dark{background:var(--ink); color:#fff;}
+.btn-ghost{background:var(--surface); color:var(--ink); box-shadow:none; border:var(--bw) solid var(--line-soft);}
+.btn-ghost:hover{box-shadow:none; border-color:var(--ink); transform:none;}
+.btn-mint{background:var(--mint); color:#fff;}
+.btn-sm{padding:9px 16px; font-size:12.5px; border-width:var(--bw);}
+.btn-icon{width:38px;height:38px;padding:0;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;background:var(--surface); border:var(--bw) solid var(--ink); box-shadow:var(--shadow-hard-sm);}
+.btn-icon:hover{transform:translate(-1px,-1px); box-shadow:4px 4px 0 var(--ink);}
+.btn[disabled]{opacity:.4; pointer-events:none; box-shadow:var(--shadow-hard-sm) !important; transform:none !important;}
+.btn-text{background:none;border:none;color:var(--ink); font-weight:800; font-size:13px; text-decoration:underline; text-underline-offset:3px; text-decoration-color:var(--accent); text-decoration-thickness:2px;}
+.btn-text:hover{color:var(--accent-dark);}
+
+.chip{
+  display:inline-flex; align-items:center; gap:6px; padding:8px 16px; border-radius:99px; font-size:12.5px; font-weight:800;
+  border:var(--bw) solid var(--ink); background:var(--surface); color:var(--ink); transition:all var(--dur-1) var(--ease-out);
+}
+.chip.active{background:var(--accent); color:var(--ink); box-shadow:var(--shadow-hard-sm);}
+.chip:hover:not(.active){background:var(--accent-soft);}
+
+.card-surface{background:var(--surface); border:var(--bw) solid var(--ink); border-radius:var(--radius-l); box-shadow:var(--shadow-hard);}
+
+/* ============ INTRO ============ */
+.eyebrow{
+  display:inline-flex; align-items:center; gap:6px; font-family:var(--font-body); font-weight:800; font-size:11.5px;
+  letter-spacing:.06em; text-transform:uppercase; color:var(--accent-dark); margin-bottom:14px;
+  background:var(--accent-soft); border:var(--bw) solid var(--ink); padding:6px 14px; border-radius:99px;
+}
+.intro-hero{text-align:center; padding:56px 20px 40px; max-width:640px; margin:0 auto; position:relative;}
+.pulse-orb-wrap{width:150px; height:150px; margin:0 auto 30px; position:relative;}
+.intro-hero h1{font-size:40px; margin-bottom:16px; line-height:1.15;}
+.intro-hero h1 .hl{color:var(--accent);}
+.intro-hero p{color:var(--ink-soft); font-size:16px; margin-bottom:30px; line-height:1.6;}
+.meta-pill-row{display:flex; align-items:center; justify-content:center; gap:12px; margin-bottom:30px; flex-wrap:wrap;}
+.meta-pill{display:inline-flex; align-items:center; gap:8px; border:var(--bw) solid var(--ink); border-radius:99px; padding:9px 16px; font-size:13px; font-weight:700; background:var(--surface);}
+
+/* ============ FIELDS ============ */
+.field-block{margin-bottom:22px;}
+.field-label{display:block; font-size:11.5px; font-weight:800; color:var(--ink); text-transform:uppercase; letter-spacing:.05em; margin-bottom:8px;}
+.field-input, .field-textarea, .field-select{width:100%; border:var(--bw) solid var(--ink); border-radius:var(--radius-s); padding:13px 15px; font-size:14px; font-family:var(--font-body); background:var(--surface); transition:box-shadow var(--dur-1);}
+.field-input:focus, .field-textarea:focus{box-shadow:3px 3px 0 var(--accent); outline:none;}
+.field-textarea{resize:vertical; min-height:66px;}
+
+/* ============ TEMPLATE GALLERY ============ */
+.tmpl-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-top:8px;}
+.tmpl-card{
+  text-align:left; background:var(--surface); border:var(--bw) solid var(--ink); border-radius:var(--radius-m);
+  padding:19px; transition:all var(--dur-2) var(--ease-out); box-shadow:var(--shadow-hard-sm);
+}
+.tmpl-card:hover{transform:translate(-2px,-2px); box-shadow:6px 6px 0 var(--ink);}
+.tmpl-card.selected{background:var(--accent-soft); box-shadow:var(--shadow-hard);}
+.tmpl-ico{width:40px;height:40px;border-radius:12px; border:var(--bw) solid var(--ink); display:flex; align-items:center; justify-content:center; margin-bottom:13px; font-size:17px; background:var(--surface);}
+.tmpl-t{font-family:var(--font-display); font-weight:700; font-size:16px; margin-bottom:5px;}
+.tmpl-d{font-size:12.6px; color:var(--ink-soft); line-height:1.4;}
+.tmpl-count{font-size:10.8px; font-weight:800; color:var(--ink-faint); margin-top:11px; text-transform:uppercase; letter-spacing:.03em;}
+
+/* ============ STEPPER ============ */
+.stepper{display:flex; align-items:center; gap:0; margin-bottom:36px; flex-wrap:wrap;}
+.stepper .step{display:flex; align-items:center; gap:8px; padding:4px 2px;}
+.stepper .num{width:24px;height:24px;border-radius:50%; background:var(--surface); border:var(--bw) solid var(--ink); color:var(--ink); font-size:11px; font-weight:800; display:flex; align-items:center; justify-content:center; flex-shrink:0;}
+.stepper .step.done .num{background:var(--mint); color:#fff; border-color:var(--ink);}
+.stepper .step.now .num{background:var(--accent); color:var(--ink);}
+.stepper .txt{font-size:12px; font-weight:800; color:var(--ink-faint);}
+.stepper .step.now .txt{color:var(--ink);}
+.stepper .sep{width:22px; height:var(--bw); background:var(--ink); margin:0 5px; opacity:.25;}
+
+/* ============ QUESTION BUILDER ============ */
+.q-list{display:flex; flex-direction:column; gap:12px;}
+.q-card{background:var(--surface); border:var(--bw) solid var(--ink); border-radius:var(--radius-m); overflow:hidden; transition:box-shadow var(--dur-1); box-shadow:var(--shadow-hard-sm);}
+.q-head{display:flex; align-items:center; gap:12px; padding:15px 17px;}
+.q-drag{cursor:grab; color:var(--ink-faint); font-size:15px; padding:2px;}
+.q-num{font-weight:800; font-size:11px; color:var(--ink); background:var(--accent-soft); width:26px;height:26px;border-radius:8px; border:var(--bw) solid var(--ink); display:flex; align-items:center; justify-content:center; flex-shrink:0;}
+.q-summary{flex:1; min-width:0;}
+.q-text{font-size:14px; font-weight:700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.q-type-row{display:flex; align-items:center; gap:8px; margin-top:3px;}
+.q-type-badge{font-size:10.5px; font-weight:800; color:var(--ink); background:var(--gray-soft); padding:3px 10px; border-radius:99px; border:1.5px solid var(--ink);}
+.q-required{font-size:10px; color:var(--accent-dark); font-weight:800;}
+.q-actions{display:flex; gap:4px; flex-shrink:0;}
+.q-actions button{width:32px;height:32px;border-radius:9px;border:1.5px solid transparent;background:transparent;color:var(--ink-faint); display:flex;align-items:center;justify-content:center; font-size:13px; transition:all var(--dur-1);}
+.q-actions button:hover{background:var(--surface-2); border-color:var(--ink); color:var(--ink);}
+.q-actions button.danger:hover{background:#FBE3E3; border-color:#B23838; color:#B23838;}
+.q-body{max-height:0; overflow:hidden; transition:max-height var(--dur-2) var(--ease-out); border-top:0 solid var(--ink);}
+.q-body.open{max-height:520px; border-top:var(--bw) solid var(--ink);}
+.q-body-inner{padding:19px 17px 21px 53px; display:flex; flex-direction:column; gap:14px;}
+.type-picker{display:flex; gap:8px; flex-wrap:wrap;}
+.q-preview-box{background:var(--surface-2); border:2px dashed var(--ink); border-radius:var(--radius-m); padding:17px 19px;}
+.q-preview-label{font-size:10px; font-weight:800; color:var(--ink-faint); text-transform:uppercase; letter-spacing:.05em; margin-bottom:11px;}
+.toggle-row{display:flex; align-items:center; justify-content:space-between;}
+.switch{position:relative; width:38px; height:22px; border-radius:99px; background:var(--surface); border:var(--bw) solid var(--ink); flex-shrink:0; transition:background var(--dur-2);}
+.switch.on{background:var(--accent);}
+.switch::after{content:'';position:absolute; top:1.5px; left:1.5px; width:15px; height:15px; border-radius:50%; background:var(--ink); transition:transform var(--dur-2) var(--ease-out);}
+.switch.on::after{transform:translateX(16px);}
+.add-q-btn{border:2.5px dashed var(--ink); background:transparent; border-radius:var(--radius-m); padding:19px; font-size:14px; color:var(--ink); font-weight:800; transition:all var(--dur-1);}
+.add-q-btn:hover{background:var(--accent-soft); border-style:solid;}
+
+/* ============ RATING / LIKERT / CHOICE (reusable, bold pill style) ============ */
+.rating-row{display:flex; gap:11px;}
+.rating-opt{
+  flex:1; aspect-ratio:1; max-width:60px; border-radius:16px; border:var(--bw-lg) solid var(--ink);
+  display:flex; align-items:center; justify-content:center; font-family:var(--font-display); font-weight:700; font-size:18px;
+  transition:all var(--dur-2) var(--ease-spring); background:var(--surface); color:var(--ink); box-shadow:var(--shadow-hard-sm);
+}
+.rating-opt:hover{transform:translate(-1px,-1px); box-shadow:4px 4px 0 var(--ink);}
+.rating-opt.picked{background:var(--accent); transform:translate(2px,2px); box-shadow:1px 1px 0 var(--ink);}
+.rating-scale-labels{display:flex; justify-content:space-between; font-size:11.5px; color:var(--ink-soft); font-weight:700; margin-top:10px;}
+
+.likert-col{display:flex; flex-direction:column; gap:10px;}
+.likert-opt{display:flex; align-items:center; gap:12px; padding:14px 17px; border:var(--bw) solid var(--ink); border-radius:var(--radius-m); background:var(--surface); transition:all var(--dur-1) var(--ease-out); font-size:14px; font-weight:700; box-shadow:var(--shadow-hard-sm);}
+.likert-opt:hover{transform:translate(-1px,-1px); box-shadow:4px 4px 0 var(--ink);}
+.likert-opt.picked{background:var(--accent-soft); transform:translate(2px,2px); box-shadow:1px 1px 0 var(--ink);}
+.likert-dot{width:19px;height:19px;border-radius:50%; border:var(--bw) solid var(--ink); flex-shrink:0; display:flex; align-items:center; justify-content:center; background:var(--surface);}
+.likert-opt.picked .likert-dot{background:var(--accent);}
+.likert-dot::after{content:''; width:8px;height:8px;border-radius:50%; background:var(--ink); opacity:0; transition:opacity var(--dur-1);}
+.likert-opt.picked .likert-dot::after{opacity:1;}
+
+.choice-col{display:flex; flex-direction:column; gap:10px;}
+.choice-opt{display:flex; align-items:center; gap:12px; padding:14px 17px; border:var(--bw) solid var(--ink); border-radius:var(--radius-m); background:var(--surface); transition:all var(--dur-1); font-size:14px; font-weight:700; box-shadow:var(--shadow-hard-sm);}
+.choice-opt:hover{transform:translate(-1px,-1px); box-shadow:4px 4px 0 var(--ink);}
+.choice-opt.picked{background:var(--accent-soft); transform:translate(2px,2px); box-shadow:1px 1px 0 var(--ink);}
+.choice-mark{width:19px;height:19px; border:var(--bw) solid var(--ink); flex-shrink:0; background:var(--surface);}
+.choice-mark.round{border-radius:50%;}
+.choice-mark.square{border-radius:6px;}
+.choice-opt.picked .choice-mark{background:var(--accent); position:relative;}
+.choice-opt.picked .choice-mark.square::after{content:'✓'; color:var(--ink); font-size:12px; font-weight:800; position:absolute; inset:0; display:flex; align-items:center; justify-content:center;}
+
+.open-text-box{width:100%; min-height:124px; border:var(--bw) solid var(--ink); border-radius:var(--radius-m); padding:17px; font-size:15px; font-family:var(--font-body); background:var(--surface); resize:none; transition:box-shadow var(--dur-1);}
+.open-text-box:focus{box-shadow:3px 3px 0 var(--accent); outline:none;}
+.char-count{text-align:right; font-size:11px; font-weight:700; color:var(--ink-faint); margin-top:7px;}
+
+/* ============ CONFIG SCREEN ============ */
+.delivery-cards{display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:8px;}
+.delivery-card{text-align:left; background:var(--surface); border:var(--bw) solid var(--ink); border-radius:var(--radius-l); padding:23px; transition:all var(--dur-2) var(--ease-out); box-shadow:var(--shadow-hard-sm);}
+.delivery-card:hover{transform:translate(-2px,-2px); box-shadow:6px 6px 0 var(--ink);}
+.delivery-card.selected{background:var(--accent-soft); box-shadow:var(--shadow-hard);}
+.delivery-ico{width:44px;height:44px; border-radius:14px; border:var(--bw) solid var(--ink); display:flex; align-items:center; justify-content:center; margin-bottom:15px; font-size:20px; background:var(--surface);}
+.delivery-t{font-family:var(--font-display); font-size:17px; font-weight:700; margin-bottom:7px;}
+.delivery-d{font-size:13px; color:var(--ink-soft); line-height:1.5;}
+
+.scope-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:12px;}
+.scope-card{text-align:center; padding:17px; border:var(--bw) solid var(--ink); border-radius:var(--radius-m); background:var(--surface); transition:all var(--dur-1); box-shadow:var(--shadow-hard-sm);}
+.scope-card.selected{background:var(--accent-soft); transform:translate(2px,2px); box-shadow:1px 1px 0 var(--ink);}
+.scope-n{font-family:var(--font-display); font-size:24px; font-weight:700;}
+.scope-l{font-size:12.5px; color:var(--ink-soft); font-weight:700; margin-top:3px;}
+
+.privacy-cards{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+
+/* ============ DEPLOY SUMMARY ============ */
+.summary-card{background:var(--surface); border:var(--bw-lg) solid var(--ink); border-radius:var(--radius-xl); padding:36px 34px; box-shadow:var(--shadow-hard-lg); position:relative; overflow:hidden;}
+.summary-card::before{content:''; position:absolute; top:-40px; right:-40px; width:140px; height:140px; border-radius:50%; background:var(--accent-soft); z-index:0;}
+.summary-card > *{position:relative; z-index:1;}
+.summary-row{display:flex; justify-content:space-between; align-items:center; padding:13px 0; border-bottom:2px dashed var(--line-soft);}
+.summary-row:last-child{border-bottom:none;}
+.summary-row .k{font-size:13.5px; color:var(--ink-soft); font-weight:700;}
+.summary-row .v{font-size:14.5px; font-weight:800;}
+
+/* ============ CONSOLE FRAME — signature "session" chrome ============ */
+.console-frame{
+  position:relative; background:var(--surface-2); border:var(--bw-lg) solid var(--ink); border-radius:28px;
+  padding:38px 34px 30px; margin:6px 0 20px;
+  clip-path:polygon(0 24px,24px 0,calc(100% - 24px) 0,100% 24px,100% calc(100% - 24px),calc(100% - 24px) 100%,24px 100%,0 calc(100% - 24px));
+}
+.console-frame::before, .console-frame::after{
+  content:''; position:absolute; top:-2.5px; width:52px; height:14px;
+  background-image:repeating-linear-gradient(115deg, var(--accent) 0 6px, transparent 6px 11px);
+  border-top:var(--bw-lg) solid var(--ink);
+}
+.console-frame::before{left:50%; transform:translateX(-50%);}
+.console-frame::after{display:none;}
+.console-dots{position:absolute; width:26px; height:26px; display:grid; grid-template-columns:repeat(2,1fr); gap:4px; z-index:2;}
+.console-dots span{width:5px;height:5px;border-radius:50%; background:var(--accent);}
+.console-dots.tl{top:10px; left:10px;} .console-dots.tr{top:10px; right:10px;}
+.console-side{position:absolute; top:50%; transform:translateY(-50%); width:6px; height:120px; display:flex; flex-direction:column; align-items:center; justify-content:space-between;}
+.console-side.left{left:-3px;} .console-side.right{right:-3px;}
+.console-side i{width:6px;height:6px;border-radius:1px; background:var(--accent);}
+.console-side b{width:9px;height:9px;background:var(--accent); border:1.5px solid var(--ink);}
+.console-title{text-align:center; margin-bottom:22px;}
+.console-title .lbl{font-size:11px; font-weight:800; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-faint); margin-bottom:6px;}
+.console-title .name{font-family:var(--font-display); font-size:22px; font-weight:700; display:inline-flex; align-items:center; gap:10px;}
+.console-title .name .dot{width:7px;height:7px;border-radius:50%; background:var(--accent);}
+
+.stat-row-4{display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:26px;}
+.stat-card{background:var(--surface); border:var(--bw) solid var(--ink); border-radius:var(--radius-m); padding:15px 17px; box-shadow:var(--shadow-hard-sm);}
+.stat-card .lbl{display:flex; align-items:center; gap:6px; font-size:11px; font-weight:800; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.03em; margin-bottom:6px;}
+.stat-card .val{font-family:var(--font-display); font-size:26px; font-weight:700; color:var(--ink);}
+.stat-card .val.accent{color:var(--accent-dark);}
+
+.session-progress-track{height:8px; background:var(--gray-soft); border:1.5px solid var(--ink); border-radius:99px; overflow:hidden; margin-bottom:26px;}
+.session-progress-fill{height:100%; background:var(--accent); transition:width var(--dur-3) var(--ease-out);}
+
+/* ============ PARTICIPANTS ============ */
+.people-grid{display:grid; grid-template-columns:repeat(2,1fr); gap:11px;}
+.person-card{display:flex; align-items:center; gap:13px; padding:14px 17px; border:var(--bw) solid var(--ink); border-radius:var(--radius-m); background:var(--surface); transition:all var(--dur-1); box-shadow:var(--shadow-hard-sm);}
+.person-card.selected{background:var(--accent-soft); transform:translate(2px,2px); box-shadow:1px 1px 0 var(--ink);}
+.person-avatar{width:36px;height:36px;border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:13.5px; color:var(--ink); flex-shrink:0; border:var(--bw) solid var(--ink);}
+.person-name{font-weight:700; font-size:14px;}
+.person-check{margin-left:auto; width:22px;height:22px; border-radius:7px; border:var(--bw) solid var(--ink); display:flex; align-items:center; justify-content:center; font-size:11px; color:var(--ink); font-weight:800; background:var(--surface);}
+.person-card.selected .person-check{background:var(--accent);}
+.count-chip{display:inline-flex; align-items:center; gap:8px; background:var(--surface); border:var(--bw) solid var(--ink); border-radius:99px; padding:9px 18px; font-size:13.5px; font-weight:800; margin-top:18px; box-shadow:var(--shadow-hard-sm);}
+
+/* ============ LIVE SESSION ============ */
+.live-hero{text-align:center; padding:6px 0 22px;}
+.join-code{font-family:var(--font-display); font-size:48px; font-weight:700; letter-spacing:.1em; margin:12px 0 8px;}
+.join-link{font-family:var(--font-body); font-weight:800; font-size:13px; color:var(--ink); background:var(--accent-soft); border:var(--bw) solid var(--ink); padding:8px 18px; border-radius:99px; display:inline-block;}
+.result-bar-row{margin-bottom:20px;}
+.result-bar-head{display:flex; justify-content:space-between; font-size:13.5px; font-weight:700; margin-bottom:8px;}
+.result-bar-track{height:14px; background:var(--gray-soft); border:1.5px solid var(--ink); border-radius:99px; overflow:hidden;}
+.result-bar-fill{height:100%; border-radius:99px; transition:width 700ms var(--ease-out); background:var(--accent);}
+.bignum-result{font-family:var(--font-display); font-size:42px; font-weight:700;}
+
+/* ============ RESULTS DASHBOARD ============ */
+.results-top{display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:28px; flex-wrap:wrap; gap:16px;}
+.overall-score{display:flex; align-items:baseline; gap:12px;}
+.overall-score .n{font-family:var(--font-display); font-size:54px; font-weight:800;}
+.category-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); gap:15px; margin-top:10px;}
+.cat-card{background:var(--surface); border:var(--bw) solid var(--ink); border-radius:var(--radius-m); padding:19px 21px; box-shadow:var(--shadow-hard-sm);}
+.cat-name{font-size:13.5px; font-weight:800; margin-bottom:9px; display:flex; align-items:center; gap:8px;}
+.cat-dot{width:10px;height:10px;border-radius:50%; border:1.5px solid var(--ink);}
+.cat-score{font-family:var(--font-display); font-size:25px; font-weight:700; margin-bottom:9px;}
+.cat-track{height:9px; background:var(--gray-soft); border:1.5px solid var(--ink); border-radius:99px; overflow:hidden;}
+.cat-fill{height:100%; border-radius:99px;}
+.cat-tag{font-size:10.5px; font-weight:800; margin-top:9px; padding:3px 10px; border-radius:99px; display:inline-block; border:1.5px solid var(--ink);}
+
+.comment-filters{display:flex; gap:9px; margin:28px 0 17px;}
+.comment-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:13px;}
+.comment-card{background:var(--surface); border:var(--bw) solid var(--ink); border-radius:var(--radius-m); padding:17px 19px; font-size:13.6px; line-height:1.5; position:relative; box-shadow:var(--shadow-hard-sm);}
+.comment-tag{position:absolute; top:15px; right:15px; width:9px;height:9px;border-radius:50%; border:1.5px solid var(--ink);}
+
+/* ============ EMPLOYEE PHONE FRAME ============ */
+.phone-stage{display:flex; justify-content:center; padding:36px 20px 60px;}
+.phone{
+  width:390px; min-height:720px; background:var(--surface); border-radius:46px; border:var(--bw-lg) solid var(--ink);
+  box-shadow:8px 8px 0 var(--ink); position:relative; overflow:hidden; display:flex; flex-direction:column;
+}
+.phone-notch{position:absolute; top:0; left:50%; transform:translateX(-50%); width:120px; height:24px; background:var(--ink); border-radius:0 0 18px 18px; z-index:5;}
+.phone-screen{flex:1; display:flex; flex-direction:column; padding:46px 26px 30px; overflow-y:auto;}
+.emp-mark{display:flex; align-items:center; gap:8px; margin-bottom:22px; flex-shrink:0;}
+.emp-mark svg{width:20px;height:20px;}
+.emp-mark span{font-family:var(--font-body); font-weight:800; font-size:10px; color:var(--ink-faint); letter-spacing:.06em;}
+.emp-center{margin:auto; text-align:center;}
+.emp-center h2{font-size:24px; margin-bottom:11px; line-height:1.25;}
+.emp-center p{color:var(--ink-soft); font-size:13.6px; line-height:1.55;}
+.emp-meta-row{display:flex; justify-content:center; gap:10px; margin:19px 0 25px; flex-wrap:wrap;}
+.emp-progress-track{width:100%; height:8px; background:var(--gray-soft); border:1.5px solid var(--ink); border-radius:99px; overflow:hidden; margin-bottom:22px;}
+.emp-progress-fill{height:100%; background:var(--accent); border-radius:99px; transition:width var(--dur-3) var(--ease-out);}
+.emp-qcount{font-size:11.5px; font-weight:800; color:var(--ink-faint); margin-bottom:12px; text-transform:uppercase; letter-spacing:.04em;}
+.emp-qtext{font-family:var(--font-display); font-size:23px; line-height:1.3; margin-bottom:24px; font-weight:700;}
+.emp-nav-row{display:flex; justify-content:space-between; align-items:center; margin-top:26px;}
+.join-input{width:100%; text-align:center; font-family:var(--font-display); font-size:28px; font-weight:700; letter-spacing:.15em; border:var(--bw) solid var(--ink); border-radius:var(--radius-m); padding:15px; margin:20px 0; background:var(--surface);}
+.privacy-note{display:flex; align-items:center; gap:8px; font-size:11.8px; font-weight:700; color:var(--ink); background:var(--gray-soft); padding:10px 14px; border-radius:99px; margin-top:14px; border:1.5px solid var(--ink);}
+.emp-check-anim{width:68px;height:68px;border-radius:50%; background:var(--accent); border:var(--bw-lg) solid var(--ink); display:flex; align-items:center; justify-content:center; margin:0 auto 22px; font-size:28px; color:var(--ink); animation:popIn 500ms var(--ease-spring);}
+@keyframes popIn{from{transform:scale(0);} to{transform:scale(1);}}
+
+/* preview modal */
+.modal-overlay{position:fixed; inset:0; background:rgba(20,17,16,.55); backdrop-filter:blur(2px); z-index:40; display:flex; align-items:center; justify-content:center; opacity:0; pointer-events:none; transition:opacity var(--dur-2);}
+.modal-overlay.show{opacity:1; pointer-events:auto;}
+
+/* dev note footer */
+.dev-note{max-width:660px; margin:76px auto 0; padding:28px 30px; background:var(--surface); border:var(--bw) solid var(--ink); border-radius:var(--radius-l); font-size:12.8px; color:var(--ink-soft); line-height:1.7; box-shadow:var(--shadow-hard-sm);}
+.dev-note b{color:var(--ink);}
+.flow-diagram{font-family:var(--font-mono); font-size:11.5px; color:var(--ink-soft); background:var(--surface-2); border:1.5px dashed var(--ink); border-radius:var(--radius-m); padding:17px 21px; margin:15px 0; line-height:1.9;}
+
+/* ============ HOME — PULSE CARD LIST (history + analytics entry) ============ */
+.pulse-card-list{display:flex; flex-direction:column; gap:14px;}
+.pulse-card{
+  background:var(--surface); border:var(--bw) solid var(--ink); border-radius:var(--radius-l);
+  padding:20px 22px; box-shadow:var(--shadow-hard-sm); cursor:pointer; transition:all var(--dur-2) var(--ease-out);
+}
+.pulse-card:hover{transform:translate(-2px,-2px); box-shadow:6px 6px 0 var(--ink);}
+.pulse-card-top{display:flex; align-items:center; gap:14px; margin-bottom:16px;}
+.pulse-card-name{font-family:var(--font-display); font-weight:700; font-size:17px;}
+.pulse-card-meta{font-size:12px; font-weight:700; color:var(--ink-soft); margin-top:3px; display:flex; align-items:center; gap:5px;}
+.pulse-card-bottom{display:flex; align-items:center; gap:28px; padding-top:14px; border-top:2px dashed var(--line-soft);}
+.pulse-card-stat{display:flex; flex-direction:column;}
+.pulse-card-stat .n{font-family:var(--font-display); font-size:20px; font-weight:700;}
+.pulse-card-stat .n.accent{color:var(--accent-dark);}
+.pulse-card-stat .l{font-size:10.5px; font-weight:800; color:var(--ink-faint); text-transform:uppercase; letter-spacing:.03em; margin-top:1px;}
+.pulse-status-badge{display:inline-flex; align-items:center; gap:5px; font-size:10.5px; font-weight:800; padding:5px 12px; border-radius:99px; border:1.5px solid var(--ink); text-transform:uppercase; letter-spacing:.03em; flex-shrink:0;}
+.pulse-status-badge.live{background:var(--accent); color:var(--ink);}
+.pulse-status-badge.collecting{background:var(--gray-soft); color:var(--ink);}
+.pulse-status-badge.completed{background:var(--mint-soft); color:var(--mint);}
+
+.section-title{font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:.05em; color:var(--ink); margin:32px 0 15px; display:flex; align-items:center; gap:8px;}
+.section-title::before{content:''; width:8px; height:8px; border-radius:2px; background:var(--accent); border:1.5px solid var(--ink);}
+.hr-soft{height:2px; background:var(--line-soft); border:none; margin:28px 0;}
+.two-col{display:grid; grid-template-columns:1.25fr 1fr; gap:36px; align-items:start;}
+.toast{position:fixed; bottom:28px; left:50%; transform:translateX(-50%); background:var(--ink); color:#fff; padding:13px 22px; border-radius:99px; font-size:13.5px; box-shadow:5px 5px 0 var(--accent); z-index:60; opacity:0; pointer-events:none; transition:opacity var(--dur-2), transform var(--dur-2); font-weight:700; border:var(--bw) solid var(--ink);}
+.toast.show{opacity:1; transform:translateX(-50%) translateY(-6px);}
+
+@media(max-width:900px){
+  .tmpl-grid{grid-template-columns:1fr 1fr;}
+  .delivery-cards, .privacy-cards{grid-template-columns:1fr;}
+  .scope-grid{grid-template-columns:1fr;}
+  .two-col{grid-template-columns:1fr;}
+  .stat-row-4{grid-template-columns:repeat(2,1fr);}
+}
+</style>
+</head>
+<body>
+<div class="bg-deco" id="bgDeco"></div>
+<div id="topbar">
+  <div class="tb-left">
+    <div class="tb-mark">
+      <svg class="tb-logo" viewBox="0 0 30 30"><circle cx="15" cy="15" r="12.5" fill="none" stroke="#1B1224" stroke-width="2"/><path d="M8.5 16.5c1.8 0 1.8-4 3.6-4s1.8 4 3.6 4 1.8-4 3.6-4 1.8 4 3.6 4" stroke="#7A4FE0" stroke-width="2.3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span class="tb-name">Pulse Survey</span>
+    </div>
+    <div class="tb-crumb">TEAM ENGAGEMENT <span>›</span> <b>Pulse Survey</b></div>
+  </div>
+  <div class="view-switch">
+    <span class="view-switch-label">Prototype</span>
+    <button id="btnHostView" class="active" onclick="setTopView('host')">Host View</button>
+    <button id="btnEmpView" onclick="setTopView('employee')">Employee View</button>
+  </div>
+</div>
+<div id="app"></div>
+<div class="toast" id="toast"></div>
+<script>
+/* =========================================================
+   GUMMYGUM — PULSE SURVEY — interactive prototype
+   Vanilla JS. Two sides (Host / Employee) sharing one data model.
+   Host owns: Create → Build → Configure → Deploy → History/Analytics.
+   Every pulse a Host creates lives in state.host.pulses, and each
+   pulse's snapshot is computed from its own real responses[] array —
+   not a separate faked results blob.
+   ========================================================= */
+
+/* ---------- question type meta ---------- */
+const QTYPES = {
+  rating:  {label:'Rating Scale',   icon:'★'},
+  likert:  {label:'Likert',         icon:'≋'},
+  single:  {label:'Single Choice',  icon:'◉'},
+  multi:   {label:'Multiple Choice',icon:'▤'},
+  open:    {label:'Open Text',      icon:'✎'},
+};
+const LIKERT_OPTIONS = ['Strongly disagree','Disagree','Neutral','Agree','Strongly agree'];
+
+/* ---------- templates (each scored question carries a short
+   "topic" — this is what powers the snapshot's category cards) ---------- */
+const TEMPLATES = {
+  team: {
+    name:'Team Experience', icon:'🤝', color:'var(--accent)', bg:'var(--accent-soft)',
+    desc:'A broad check-in on how the team is doing overall.',
+    questions:[
+      q('I feel supported by my team.','rating','Team Support'),
+      q('My team communicates openly and honestly.','likert','Communication'),
+      q('I feel a sense of belonging on this team.','rating','Belonging'),
+      q('How connected do you feel to your teammates?', 'single', 'Connection', ['Very connected','Somewhat connected','Not very connected','Not connected at all']),
+      q("What's one thing that would improve your experience at work?", 'open'),
+    ]
+  },
+  manager: {
+    name:'Manager Support', icon:'🧭', color:'var(--grape)', bg:'var(--grape-soft)',
+    desc:'Understand how supported people feel by their manager.',
+    questions:[
+      q('My manager supports my growth.','rating','Growth Support'),
+      q('I get useful feedback from my manager.','likert','Feedback'),
+      q('I feel comfortable raising concerns with my manager.','rating','Psychological Safety'),
+      q('What would help your manager support you better?','open'),
+    ]
+  },
+  comm: {
+    name:'Communication', icon:'💬', color:'var(--mint)', bg:'var(--mint-soft)',
+    desc:'Check whether information flows clearly across the team.',
+    questions:[
+      q('I understand how decisions get made around here.','likert','Decision Clarity'),
+      q('I have the information I need to do my job well.','rating','Information Flow'),
+      q('Which channel works best for team updates?', 'single', null, ['Slack / chat','Email','Team meetings','Not sure']),
+      q('Is there anything that feels unclear right now?','open'),
+    ]
+  },
+  workload: {
+    name:'Workload', icon:'⚖️', color:'var(--amber)', bg:'var(--amber-soft)',
+    desc:"Get an honest read on capacity and pace.",
+    questions:[
+      q('My workload feels manageable right now.','rating','Workload'),
+      q('I can take time off when I need to.','likert','Time Off'),
+      q('How often do you work outside your normal hours?', 'single', 'Overtime', ['Never','Rarely','Sometimes','Often']),
+      q("What's making your workload harder than it needs to be?",'open'),
+    ]
+  },
+  wellbeing: {
+    name:'Wellbeing', icon:'🌤️', color:'var(--accent)', bg:'var(--accent-soft)',
+    desc:'A gentle pulse on how people are doing.',
+    questions:[
+      q('I feel energized by my work most days.','rating','Energy'),
+      q('I have a healthy balance between work and life.','likert','Work-Life Balance'),
+      q('I feel comfortable being open about how I\'m doing.','rating','Openness'),
+      q('Anything on your mind we should know about?','open'),
+    ]
+  },
+  connection: {
+    name:'Team Connection', icon:'🌱', color:'var(--mint)', bg:'var(--mint-soft)',
+    desc:'How connected people feel to each other and the mission.',
+    questions:[
+      q('I feel connected to the people I work with.','rating','Connection'),
+      q('I understand how my work contributes to our goals.','likert','Purpose'),
+      q('I feel proud to be part of this team.','rating','Pride'),
+      q('What would help you feel more connected?','open'),
+    ]
+  },
+  custom: {
+    name:'Custom', icon:'✦', color:'var(--ink-soft)', bg:'var(--surface-2)',
+    desc:'Start from a blank pulse and build it your way.',
+    questions:[]
+  }
+};
+function q(text,type,topic,options){
+  const o = {id:'q'+Math.random().toString(36).slice(2,9), text, type, required:true, topic:topic||null};
+  if(type==='rating') o.scaleMax=5;
+  if(type==='single'||type==='multi') o.options = options || ['Option 1','Option 2','Option 3'];
+  return o;
+}
+function cloneQuestions(list){ return list.map(x=>({...x, options:x.options? [...x.options]:undefined})); }
+
+/* ---------- sample participants (used for the builder's people picker) ---------- */
+const SAMPLE_PEOPLE = ['Alex Kim','Priya Nair','Jordan Lee','Sam Ortiz','Maya Chen','Diego Ruiz','Faith Adeyemi','Noah Becker','Lena Wolf','Theo Marsh'];
+
+/* ---------- fake-respondent generation, used only to (a) seed pulse
+   history so it isn't empty on first load, and (b) let a Host
+   "simulate" additional responses arriving. Real employee submissions
+   go through the exact same responses[] array, tagged isReal:true. ---------- */
+const FAKE_COMMENTS = [
+  'More clarity around priorities would help.',
+  'I feel supported by my manager.',
+  'Communication has improved recently.',
+  "It's been a bit chaotic with the new tools.",
+  'Pretty good overall, no complaints.',
+  'Would love more recognition for good work.',
+  'Team collaboration has been great this month.',
+  'Workload feels heavier than usual lately.',
+  'Escalation process could be clearer.',
+  'I appreciate how open my manager is.',
+];
+function fakeRespondentAnswers(questions){
+  const answers = {};
+  questions.forEach(qq=>{
+    if(qq.type==='rating') answers[qq.id] = Math.max(1, Math.min(5, Math.round(3.1 + (Math.random()*2-1)*1.7)));
+    else if(qq.type==='likert') answers[qq.id] = Math.max(0, Math.min(4, Math.round(2.5 + (Math.random()*2-1)*1.6)));
+    else if(qq.type==='single') answers[qq.id] = Math.floor(Math.random()*qq.options.length);
+    else if(qq.type==='multi'){ const arr=[]; qq.options.forEach((o,i)=>{ if(Math.random()<0.45) arr.push(i); }); answers[qq.id]= arr.length? arr : [0]; }
+    else if(qq.type==='open') answers[qq.id] = FAKE_COMMENTS[Math.floor(Math.random()*FAKE_COMMENTS.length)];
+  });
+  return answers;
+}
+function tagComment(text){
+  const t = (text||'').toLowerCase();
+  const attentionWords = ['hard','stress','unclear','confus','chaotic','overwhelm','burnout','no support','not enough','worse','difficult','heavier'];
+  const positiveWords = ['good','great','support','improved','love','clear','helpful','proud','appreciate','well','open'];
+  if(attentionWords.some(w=>t.includes(w))) return 'attention';
+  if(positiveWords.some(w=>t.includes(w))) return 'positive';
+  return 'neutral';
+}
+
+/* =========================================================
+   SNAPSHOT COMPUTATION — the real analytics engine.
+   Given a pulse (questions + responses[]), derive everything
+   the results screen needs. No random numbers in here.
+   ========================================================= */
+function computeSnapshot(pulse){
+  const responses = pulse.responses;
+  const n = responses.length;
+  const perQuestion = pulse.questions.map(qq=>{
+    if(qq.type==='rating' || qq.type==='likert'){
+      const vals = responses.map(r=>r.answers[qq.id]).filter(v=>v!=null);
+      const avg = vals.length? vals.reduce((a,b)=>a+b,0)/vals.length : null;
+      const scoreOn5 = avg==null? null : (qq.type==='likert' ? +(1+avg).toFixed(1) : +avg.toFixed(1));
+      return {q:qq, avg:scoreOn5, answered:vals.length};
+    }
+    if(qq.type==='single' || qq.type==='multi'){
+      const dist = qq.options.map(()=>0);
+      responses.forEach(r=>{
+        const v = r.answers[qq.id];
+        if(v==null) return;
+        if(qq.type==='single') dist[v]++;
+        else (v||[]).forEach(i=>dist[i]++);
+      });
+      return {q:qq, dist, answered:responses.filter(r=>r.answers[qq.id]!=null).length};
+    }
+    // open text
+    const comments = responses
+      .map(r=>({text:r.answers[qq.id], isReal:r.isReal}))
+      .filter(c=>c.text && c.text.trim())
+      .map(c=>({...c, tag:tagComment(c.text)}));
+    return {q:qq, comments, answered:comments.length};
+  });
+
+  const categories = perQuestion
+    .filter(pq=>pq.q.topic && pq.avg!=null)
+    .map(pq=>({name:pq.q.topic, score:pq.avg}));
+
+  const overall = categories.length
+    ? +(categories.reduce((s,c)=>s+c.score,0)/categories.length).toFixed(1)
+    : null;
+
+  const allComments = perQuestion.filter(pq=>pq.q.type==='open').flatMap(pq=>pq.comments);
+
+  return {perQuestion, categories, overall, allComments, responseCount:n};
+}
+
+/* ---------- app state ---------- */
+function blankDraft(){
+  return {
+    name:'', description:'', template:null,
+    questions:[], openQ:null,
+    delivery:'private',
+    scope:'team', participantCount:20,
+    privacy:'anonymous',
+    joinCode: String(Math.floor(100000+Math.random()*900000)).replace(/(\d{3})(\d{3})/,'$1 $2'),
+  };
+}
+const state = {
+  topView:'host',
+  host:{
+    screen:'welcome',
+    draft: blankDraft(),
+    pulses: [],
+    activePulseId: null,
+    snapshotPulseId: null,
+    commentFilter:'all',
+  },
+  employee:{
+    screen:'entry', joinInput:'',
+    qIndex:0, answers:{},
+    completedPulseIds: [],
+  },
+  previewOpen:false,
+  preview:{qIndex:0, answers:{}},
+};
+function activePulse(){ return state.host.pulses.find(p=>p.id===state.host.activePulseId) || null; }
+function snapshotPulse(){ return state.host.pulses.find(p=>p.id===state.host.snapshotPulseId) || null; }
+
+/* ---------- boot / render root ---------- */
+function setTopView(v){
+  state.topView=v;
+  document.getElementById('btnHostView').classList.toggle('active', v==='host');
+  document.getElementById('btnEmpView').classList.toggle('active', v==='employee');
+  if(v==='employee'){
+    const ap = activePulse();
+    if(ap && state.employee.completedPulseIds.includes(ap.id)){
+      state.employee.screen = 'already';
+    } else if(ap){
+      state.employee.screen = ap.delivery==='live' ? 'join' : 'invite';
+    }
+  }
+  render();
+}
+window.setTopView = setTopView;
+
+let toastTimer=null;
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove('show'),2600);
+}
+
+function render(){
+  const app=document.getElementById('app');
+  if(state.topView==='host'){
+    app.innerHTML = HOST_RENDERERS[state.host.screen]();
+  } else {
+    app.innerHTML = EMP_RENDERERS[state.employee.screen]();
+  }
+  const post = state.topView==='host' ? HOST_POST[state.host.screen] : EMP_POST[state.employee.screen];
+  if(post) post();
+  if(state.previewOpen) renderPreviewModal();
+}
+
+/* =========================================================
+   REUSABLE COMPONENT: rating / likert / choice / open renderers
+   (shared by employee flow AND host preview)
+   ========================================================= */
+function renderRating(qq, picked, onPick){
+  const n = qq.scaleMax||5;
+  let html = `<div class="rating-row">`;
+  for(let i=1;i<=n;i++){
+    html += `<button class="rating-opt ${picked===i?'picked':''}" onclick="${onPick}(${i})">${i}</button>`;
+  }
+  html += `</div><div class="rating-scale-labels"><span>Strongly disagree</span><span>Strongly agree</span></div>`;
+  return html;
+}
+function renderLikert(qq, picked, onPick){
+  return `<div class="likert-col">${LIKERT_OPTIONS.map((o,i)=>`
+    <button class="likert-opt ${picked===i?'picked':''}" onclick="${onPick}(${i})"><span class="likert-dot"></span>${o}</button>`).join('')}</div>`;
+}
+function renderChoice(qq, picked, onPick, multi){
+  return `<div class="choice-col">${qq.options.map((o,i)=>{
+    const isPicked = multi ? (picked||[]).includes(i) : picked===i;
+    return `<button class="choice-opt ${isPicked?'picked':''}" onclick="${onPick}(${i})"><span class="choice-mark ${multi?'square':'round'}"></span>${o}</button>`;
+  }).join('')}</div>`;
+}
+function renderOpen(val, oninput, id){
+  return `<textarea class="open-text-box" id="${id}" placeholder="Type your answer…" oninput="${oninput}(this.value)">${val||''}</textarea><div class="char-count">${(val||'').length} characters</div>`;
+}
+
+/* ---------- pulse orb signature svg ---------- */
+function pulseOrbSVG(animate){
+  return `<svg class="pulse-orb" viewBox="0 0 150 150">
+    <circle class="pulse-ring ${animate?'animate':''}" cx="75" cy="75" r="40" stroke-width="2"/>
+    <circle class="pulse-ring ${animate?'animate':''}" cx="75" cy="75" r="40" stroke-width="2"/>
+    <circle class="pulse-ring ${animate?'animate':''}" cx="75" cy="75" r="40" stroke-width="2"/>
+    <circle cx="75" cy="75" r="34" fill="var(--accent-soft)"/>
+    <circle cx="75" cy="75" r="20" fill="var(--accent)"/>
+  </svg>`;
+}
+
+/* ---------- small line icons (reused across stat rows) ---------- */
+function icoPeople(){ return `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" style="vertical-align:-2px;"><circle cx="9" cy="8" r="3.2"/><path d="M2.5 20c0-3.5 2.9-6 6.5-6s6.5 2.5 6.5 6"/><circle cx="17" cy="9" r="2.6"/><path d="M15.5 14.2c2.7.4 4.5 2.4 4.5 5.3"/></svg>`; }
+function icoClipboard(){ return `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1M8.5 11h7M8.5 15h7"/></svg>`; }
+function icoBolt(){ return `<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" style="vertical-align:-2px;"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8z"/></svg>`; }
+function icoKey(){ return `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;"><circle cx="7.5" cy="15.5" r="4.5"/><path d="M10.9 12.1 20 3M16 7l3 3M19 4l3 3"/></svg>`; }
+function icoCheck(){ return `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;"><path d="M4 12.5l5 5L20 6"/></svg>`; }
+function icoCalendar(){ return `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;"><rect x="3.5" y="5" width="17" height="16" rx="2"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/></svg>`; }
+function logoSVG(){
+  return `<svg viewBox="0 0 30 30"><circle cx="15" cy="15" r="12.5" fill="none" stroke="var(--ink)" stroke-width="2"/><path d="M8.5 16.5c1.8 0 1.8-4 3.6-4s1.8 4 3.6 4 1.8-4 3.6-4 1.8 4 3.6 4" stroke="var(--accent)" stroke-width="2.3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+}
+
+/* =========================================================
+   HOST RENDERERS
+   ========================================================= */
+const HOST_RENDERERS = {};
+const HOST_POST = {};
+
+function hostStepper(idx){
+  const steps=['Create','Build','Configure','Deploy'];
+  return `<div class="stepper">${steps.map((s,i)=>{
+    const cls = i<idx?'done':(i===idx?'now':'');
+    const sep = i<steps.length-1? '<span class="sep"></span>':'';
+    return `<div class="step ${cls}"><span class="num">${i<idx?'✓':i+1}</span><span class="txt">${s}</span></div>${sep}`;
+  }).join('')}</div>`;
+}
+function statusBadgeHTML(status){
+  if(status==='live') return `<span class="pulse-status-badge live">${icoBolt()} Live</span>`;
+  if(status==='collecting') return `<span class="pulse-status-badge collecting">Collecting</span>`;
+  return `<span class="pulse-status-badge completed">${icoCheck()} Completed</span>`;
+}
+
+/* ---------- WELCOME — "Pulse Centre" landing, shown first ---------- */
+HOST_RENDERERS['welcome'] = function(){
+  return `<div class="pane fade-in">
+    <div class="intro-hero">
+      <div class="pulse-orb-wrap">${pulseOrbSVG(true)}</div>
+      <div class="eyebrow">GummyGum · Team Engagement</div>
+      <h1>Welcome to<br><span class="hl">Pulse Centre</span></h1>
+      <p>Everything you need to check in with your team — create a pulse, see what people are saying, and keep track of it over time.</p>
+      <button class="btn btn-primary" onclick="enterPulseCentre()">Enter Pulse Centre →</button>
+    </div>
+    <div class="section-title" style="text-align:center; justify-content:center;">What's inside</div>
+    <div class="tmpl-grid" style="max-width:760px;margin:0 auto;">
+      <div class="card-surface" style="padding:18px;"><div class="tmpl-ico" style="background:var(--accent-soft);">🎯</div><div class="tmpl-t">Ready-made templates</div><div class="tmpl-d">Team experience, manager support, workload and more — or build your own.</div></div>
+      <div class="card-surface" style="padding:18px;"><div class="tmpl-ico" style="background:var(--mint-soft);">📡</div><div class="tmpl-t">Live or private</div><div class="tmpl-d">Run it together in real time, or send it out for people to answer on their own.</div></div>
+      <div class="card-surface" style="padding:18px;"><div class="tmpl-ico" style="background:var(--grape-soft);">🌤️</div><div class="tmpl-t">History &amp; analytics</div><div class="tmpl-d">Every pulse you've run, and what the team said — together, in one place.</div></div>
+    </div>
+  </div>`;
+};
+function enterPulseCentre(){ state.host.screen='home'; render(); }
+window.enterPulseCentre = enterPulseCentre;
+
+/* ---------- HOME — the pulse list (history + entry point) ---------- */
+HOST_RENDERERS['home'] = function(){
+  const pulses = state.host.pulses;
+  return `<div class="pane fade-in">
+    <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:28px; flex-wrap:wrap; gap:16px;">
+      <div>
+        <div class="eyebrow">Team Engagement · Pulse Survey</div>
+        <h1 style="font-size:30px;">Your pulses</h1>
+        <p style="color:var(--ink-soft); font-size:14px; margin-top:6px;">Every pulse you've run — its questions, and what the team said.</p>
+      </div>
+      <button class="btn btn-primary" onclick="startCreate()">+ Create Pulse</button>
+    </div>
+    ${pulses.length===0 ? `
+    <div class="card-surface" style="padding:40px; text-align:center;">
+      <p style="color:var(--ink-soft); font-size:14px; margin-bottom:16px;">You haven't created a pulse yet.</p>
+      <button class="btn btn-primary" onclick="startCreate()">+ Create your first Pulse</button>
+    </div>` : `
+    <div class="pulse-card-list">
+      ${pulses.map(p=>pulseCardHTML(p)).join('')}
+    </div>`}
+  </div>`;
+};
+function pulseCardHTML(p){
+  const snap = computeSnapshot(p);
+  const rate = p.participantCount? Math.round(p.responses.length/p.participantCount*100) : 0;
+  const tmpl = TEMPLATES[p.template] || TEMPLATES.custom;
+  return `<div class="pulse-card" onclick="openPulseCard('${p.id}')">
+    <div class="pulse-card-top">
+      <div class="tmpl-ico" style="background:${tmpl.bg}; width:38px;height:38px; margin-bottom:0;">${tmpl.icon}</div>
+      <div style="flex:1; min-width:0;">
+        <div class="pulse-card-name">${p.name}</div>
+        <div class="pulse-card-meta">${icoCalendar()} ${p.createdDate} · ${p.delivery==='live'?'Live':'Private'} · ${p.questions.length} questions</div>
+      </div>
+      ${statusBadgeHTML(p.status)}
+    </div>
+    <div class="pulse-card-bottom">
+      <div class="pulse-card-stat"><span class="n">${p.responses.length}<span style="color:var(--ink-faint); font-weight:600;"> / ${p.participantCount}</span></span><span class="l">responses (${rate}%)</span></div>
+      ${snap.overall!=null? `<div class="pulse-card-stat"><span class="n accent">${snap.overall}</span><span class="l">/ 5 overall</span></div>` : `<div class="pulse-card-stat"><span class="n" style="color:var(--ink-faint);">—</span><span class="l">no responses yet</span></div>`}
+      <button class="btn-text" style="margin-left:auto;" onclick="event.stopPropagation(); openSnapshot('${p.id}')">View snapshot →</button>
+    </div>
+  </div>`;
+}
+function openPulseCard(id){
+  const p = state.host.pulses.find(x=>x.id===id);
+  if(!p) return;
+  if(p.status==='completed'){ openSnapshot(id); return; }
+  state.host.activePulseId = id;
+  state.host.screen = p.delivery==='live' ? 'live-session' : 'private-status';
+  render();
+}
+function openSnapshot(id){
+  state.host.snapshotPulseId = id;
+  state.host.screen = 'snapshot';
+  render();
+}
+window.openPulseCard = openPulseCard; window.openSnapshot = openSnapshot;
+
+function startCreate(){ state.host.draft = blankDraft(); state.host.screen='create'; render(); }
+window.startCreate = startCreate;
+
+/* ---------- CREATE ---------- */
+HOST_RENDERERS['create'] = function(){
+  const d = state.host.draft;
+  return `<div class="pane pane-narrow fade-in">
+    ${hostStepper(0)}
+    <h2 style="font-size:23px; margin-bottom:22px;">Create Pulse Survey</h2>
+    <div class="field-block">
+      <label class="field-label">Pulse name</label>
+      <input class="field-input" value="${d.name}" oninput="h_setName(this.value)" placeholder="e.g. Q3 Team Check-in">
+    </div>
+    <div class="field-block">
+      <label class="field-label">Description</label>
+      <textarea class="field-textarea" oninput="h_setDesc(this.value)" placeholder="What's this pulse about?">${d.description}</textarea>
+    </div>
+    <div class="section-title">Start from a template, or build your own</div>
+    <div class="tmpl-grid">
+      ${Object.entries(TEMPLATES).map(([id,t])=>`
+        <button class="tmpl-card ${d.template===id?'selected':''}" onclick="pickTemplate('${id}')">
+          <div class="tmpl-ico" style="background:${t.bg};">${t.icon}</div>
+          <div class="tmpl-t">${t.name}</div>
+          <div class="tmpl-d">${t.desc}</div>
+          <div class="tmpl-count">${t.questions.length? t.questions.length+' example questions':'Blank canvas'}</div>
+        </button>`).join('')}
+    </div>
+    <div style="margin-top:32px; display:flex; gap:12px;">
+      <button class="btn btn-primary" ${(d.name && d.template)?'':'disabled'} onclick="goBuilder()">Continue to Builder</button>
+      <button class="btn btn-ghost" onclick="state.host.screen='home'; render();">Cancel</button>
+    </div>
+  </div>`;
+};
+function h_setName(v){ state.host.draft.name=v; }
+function h_setDesc(v){ state.host.draft.description=v; }
+function pickTemplate(id){
+  const d = state.host.draft;
+  d.template=id;
+  d.questions = cloneQuestions(TEMPLATES[id].questions);
+  if(!d.name) d.name = TEMPLATES[id].name+' Pulse';
+  render();
+}
+function goBuilder(){ state.host.screen='builder'; state.host.draft.openQ=null; render(); }
+window.h_setName=h_setName; window.h_setDesc=h_setDesc; window.pickTemplate=pickTemplate; window.goBuilder=goBuilder;
+
+/* ---------- BUILDER ---------- */
+HOST_RENDERERS['builder'] = function(){
+  const d = state.host.draft;
+  return `<div class="pane fade-in">
+    ${hostStepper(1)}
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+      <div><h2 style="font-size:21px;">${d.name || 'Untitled Pulse'}</h2><p style="color:var(--ink-faint); font-size:12.5px; margin-top:4px;">${d.questions.length} questions</p></div>
+      <button class="btn btn-ghost" onclick="openPreview()">Preview</button>
+    </div>
+    <div class="q-list" id="qList">
+      ${d.questions.map((qq,i)=>builderCardHTML(qq,i)).join('')}
+    </div>
+    <button class="add-q-btn" style="margin-top:12px; width:100%;" onclick="addQuestion()">+ Add Question</button>
+    <div style="margin-top:32px; display:flex; gap:12px;">
+      <button class="btn btn-primary" ${d.questions.length? '':'disabled'} onclick="state.host.screen='config'; render();">Continue to Configuration</button>
+      <button class="btn btn-ghost" onclick="state.host.screen='create'; render();">Back</button>
+    </div>
+  </div>`;
+};
+function builderCardHTML(qq,i){
+  const d = state.host.draft;
+  const open = d.openQ===qq.id;
+  return `<div class="q-card">
+    <div class="q-head" onclick="toggleBuilderQ('${qq.id}')">
+      <span class="q-drag">⠿</span>
+      <span class="q-num">${String(i+1).padStart(2,'0')}</span>
+      <div class="q-summary">
+        <div class="q-text">${qq.text || 'Untitled question'}</div>
+        <div class="q-type-row"><span class="q-type-badge">${QTYPES[qq.type].icon} ${QTYPES[qq.type].label}</span>${qq.topic? `<span class="q-type-badge">${qq.topic}</span>`:''}</div>
+      </div>
+      <div class="q-actions" onclick="event.stopPropagation()">
+        <button title="Move up" onclick="moveQuestion('${qq.id}',-1)">↑</button>
+        <button title="Move down" onclick="moveQuestion('${qq.id}',1)">↓</button>
+        <button title="Duplicate" onclick="duplicateQuestion('${qq.id}')">⧉</button>
+        <button title="Delete" class="danger" onclick="deleteQuestion('${qq.id}')">✕</button>
+      </div>
+    </div>
+    <div class="q-body ${open?'open':''}">
+      <div class="q-body-inner">
+        <div class="field-block" style="margin-bottom:0;">
+          <label class="field-label">Question text</label>
+          <input class="field-input" value="${qq.text}" oninput="editQuestion('${qq.id}','text',this.value)" placeholder="e.g. I feel supported by my manager.">
+        </div>
+        <div class="field-block" style="margin-bottom:0;">
+          <label class="field-label">Response type</label>
+          <select class="field-select"><option>Survey scale (1–5)</option><option>Survey scale (1–7)</option><option>Agree / Disagree</option></select>
+        </div>
+        ${(qq.type==='single'||qq.type==='multi') ? optionsEditorHTML(qq) : ''}
+        <div class="field-block" style="margin-bottom:0;">
+          <label class="field-label">Topic (for snapshot category cards)</label>
+          <input class="field-input" value="${qq.topic||''}" oninput="editQuestion('${qq.id}','topic',this.value)" placeholder="e.g. Communication">
+        </div>
+        <div style="display:flex; gap:10px;">
+          <button class="btn-text" onclick="markConfigured('${qq.id}')">Done editing</button>
+          <button class="btn-text" style="color:var(--host,#B23838)" onclick="deleteQuestion('${qq.id}')">Delete question</button>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+function optionsEditorHTML(qq){
+  return `<div class="field-block" style="margin-bottom:0;">
+    <label class="field-label">Options</label>
+    <div style="display:flex; flex-direction:column; gap:8px;">
+    ${qq.options.map((o,i)=>`<div style="display:flex; gap:8px;">
+        <input class="field-input" value="${o}" oninput="editOption('${qq.id}',${i},this.value)">
+        <button class="btn-icon" onclick="removeOption('${qq.id}',${i})">✕</button>
+      </div>`).join('')}
+    </div>
+    <button class="btn-text" style="margin-top:8px;" onclick="addOption('${qq.id}')">+ Add option</button>
+  </div>`;
+}
+function findQ(id){ return state.host.draft.questions.find(x=>x.id===id); }
+function toggleBuilderQ(id){ state.host.draft.openQ = state.host.draft.openQ===id? null : id; render(); }
+function editQuestion(id,field,val){ const qq=findQ(id); qq[field]=val; }
+function markConfigured(id){ state.host.draft.openQ=null; render(); }
+function editOption(id,i,val){ findQ(id).options[i]=val; }
+function addOption(id){ const qq=findQ(id); qq.options.push('Option '+(qq.options.length+1)); render(); }
+function removeOption(id,i){ findQ(id).options.splice(i,1); render(); }
+function moveQuestion(id,dir){
+  const qs=state.host.draft.questions; const i=qs.findIndex(x=>x.id===id); const j=i+dir;
+  if(j<0||j>=qs.length) return;
+  [qs[i],qs[j]]=[qs[j],qs[i]]; render();
+}
+function duplicateQuestion(id){
+  const qs=state.host.draft.questions; const i=qs.findIndex(x=>x.id===id);
+  const copy = {...qs[i], id:'q'+Math.random().toString(36).slice(2,9), options: qs[i].options?[...qs[i].options]:undefined, text: qs[i].text+' (copy)'};
+  qs.splice(i+1,0,copy); showToast('Question duplicated'); render();
+}
+function deleteQuestion(id){
+  const qs=state.host.draft.questions; const i=qs.findIndex(x=>x.id===id);
+  qs.splice(i,1); showToast('Question deleted'); render();
+}
+function addQuestion(){
+  const nq = q('New question','rating');
+  state.host.draft.questions.push(nq); state.host.draft.openQ=nq.id; render();
+}
+window.toggleBuilderQ=toggleBuilderQ; window.editQuestion=editQuestion; window.markConfigured=markConfigured;
+window.editOption=editOption; window.addOption=addOption; window.removeOption=removeOption;
+window.moveQuestion=moveQuestion; window.duplicateQuestion=duplicateQuestion; window.deleteQuestion=deleteQuestion; window.addQuestion=addQuestion;
+
+/* ---------- CONFIG ---------- */
+HOST_RENDERERS['config'] = function(){
+  const d = state.host.draft;
+  const scopes = [{id:'team',n:8,l:'Entire team'},{id:'department',n:20,l:'Department'},{id:'selected',n:5,l:'Selected employees'}];
+  return `<div class="pane pane-narrow fade-in">
+    ${hostStepper(2)}
+    <h2 style="font-size:19px; margin-bottom:16px;">Configure delivery</h2>
+    <div class="section-title">Delivery</div>
+    <div class="delivery-cards">
+      <button class="delivery-card ${d.delivery==='live'?'selected':''}" onclick="setDelivery('live')">
+        <div class="delivery-ico" style="background:var(--accent-soft);">📡</div>
+        <div class="delivery-t">Live</div>
+        <div class="delivery-d">Run the pulse together and see aggregate responses as they arrive.</div>
+      </button>
+      <button class="delivery-card ${d.delivery==='private'?'selected':''}" onclick="setDelivery('private')">
+        <div class="delivery-ico" style="background:var(--mint-soft);">✉️</div>
+        <div class="delivery-t">Private</div>
+        <div class="delivery-d">Send the pulse to employees to complete individually, at their own pace.</div>
+      </button>
+    </div>
+
+    <div class="section-title">Participants</div>
+    <div class="scope-grid">
+      ${scopes.map(s=>`<button class="scope-card ${d.scope===s.id?'selected':''}" onclick="setScope('${s.id}',${s.n})">
+        <div class="scope-n">${s.n}</div><div class="scope-l">${s.l}</div>
+      </button>`).join('')}
+    </div>
+
+    <div class="section-title">Privacy</div>
+    <div class="privacy-cards">
+      <button class="delivery-card ${d.privacy==='anonymous'?'selected':''}" onclick="setPrivacy('anonymous')">
+        <div class="delivery-ico" style="background:var(--grape-soft);">🕶️</div>
+        <div class="delivery-t">Anonymous</div>
+        <div class="delivery-d">Responses can't be traced back to a person.</div>
+      </button>
+      <button class="delivery-card ${d.privacy==='identified'?'selected':''}" onclick="setPrivacy('identified')">
+        <div class="delivery-ico" style="background:var(--amber-soft);">🪪</div>
+        <div class="delivery-t">Identified</div>
+        <div class="delivery-d">Responses are associated with the person who gave them.</div>
+      </button>
+    </div>
+
+    <div style="margin-top:32px; display:flex; gap:12px;">
+      <button class="btn btn-primary" onclick="state.host.screen='deploy'; render();">Continue to Deploy</button>
+      <button class="btn btn-ghost" onclick="state.host.screen='builder'; render();">Back</button>
+    </div>
+  </div>`;
+};
+function setDelivery(v){ state.host.draft.delivery=v; render(); }
+function setScope(id,n){ state.host.draft.scope=id; state.host.draft.participantCount=n; render(); }
+function setPrivacy(v){ state.host.draft.privacy=v; render(); }
+window.setDelivery=setDelivery; window.setScope=setScope; window.setPrivacy=setPrivacy;
+
+/* ---------- DEPLOY ---------- */
+HOST_RENDERERS['deploy'] = function(){
+  const d = state.host.draft;
+  return `<div class="pane pane-narrow fade-in">
+    ${hostStepper(3)}
+    <div class="summary-card">
+      <div class="eyebrow">Ready to launch</div>
+      <h2 style="font-size:24px; margin-bottom:20px;">${d.name}</h2>
+      <div class="summary-row"><span class="k">Questions</span><span class="v">${d.questions.length}</span></div>
+      <div class="summary-row"><span class="k">Participants</span><span class="v">${d.participantCount} people</span></div>
+      <div class="summary-row"><span class="k">Privacy</span><span class="v">${d.privacy==='anonymous'?'Anonymous':'Identified'}</span></div>
+      <div class="summary-row"><span class="k">Delivery</span><span class="v">${d.delivery==='live'?'Live session':'Private, self-paced'}</span></div>
+    </div>
+    <div style="margin-top:28px; display:flex; gap:12px;">
+      <button class="btn btn-primary" onclick="deployPulse()">${d.delivery==='live'? 'Start Live Pulse':'Send Pulse'}</button>
+      <button class="btn btn-ghost" onclick="openPreview()">Preview as Employee</button>
+      <button class="btn-text" onclick="state.host.screen='config'; render();">Back</button>
+    </div>
+  </div>`;
+};
+function deployPulse(){
+  const d = state.host.draft;
+  const id = 'p'+Math.random().toString(36).slice(2,9);
+  const pulse = {
+    id, name:d.name, description:d.description, template:d.template,
+    questions:cloneQuestions(d.questions), delivery:d.delivery, scope:d.scope,
+    participantCount:d.participantCount, privacy:d.privacy, joinCode:d.joinCode,
+    status: d.delivery==='live' ? 'live' : 'collecting',
+    createdDate:'Today', liveQIndex:0,
+    responses:[],
+  };
+  state.host.pulses.unshift(pulse);
+  state.host.activePulseId = id;
+  state.host.screen = d.delivery==='live' ? 'live-session' : 'private-status';
+  showToast(d.delivery==='live' ? 'Live pulse started' : 'Pulse sent to '+d.participantCount+' people');
+  render();
+}
+window.deployPulse = deployPulse;
+
+/* ---------- LIVE SESSION (console-frame component) ---------- */
+HOST_RENDERERS['live-session'] = function(){
+  const p = activePulse();
+  const qq = p.questions[p.liveQIndex];
+  const progressPct = (p.liveQIndex/p.questions.length)*100;
+  const snap = computeSnapshot(p);
+  const pq = snap.perQuestion[p.liveQIndex];
+  return `<div class="pane pane-narrow fade-in">
+    <div class="console-frame">
+      <div class="console-dots tl"><span></span><span></span><span></span><span></span></div>
+      <div class="console-dots tr"><span></span><span></span><span></span><span></span></div>
+      <div class="console-side left"><i></i><b></b><i></i></div>
+      <div class="console-side right"><i></i><b></b><i></i></div>
+
+      <div class="console-title">
+        <div class="lbl">Live Pulse</div>
+        <div class="name"><span class="dot"></span>${p.name}<span class="dot"></span></div>
+      </div>
+
+      <div class="stat-row-4">
+        <div class="stat-card"><div class="lbl">${icoPeople()} Responses</div><div class="val accent">${p.responses.length}<span style="font-size:14px; color:var(--ink-faint);"> / ${p.participantCount}</span></div></div>
+        <div class="stat-card"><div class="lbl">${icoClipboard()} Question</div><div class="val">${p.liveQIndex+1}<span style="font-size:14px; color:var(--ink-faint);"> / ${p.questions.length}</span></div></div>
+        <div class="stat-card"><div class="lbl">${icoBolt()} Status</div><div class="val accent">Live</div></div>
+        <div class="stat-card"><div class="lbl">${icoKey()} Join code</div><div class="val" style="font-size:19px;">${p.joinCode}</div></div>
+      </div>
+      <div class="session-progress-track"><div class="session-progress-fill" style="width:${progressPct}%;"></div></div>
+
+      <div class="card-surface" style="padding:24px 22px;">
+        <span class="eyebrow" style="margin-bottom:14px;">${qq.type.toUpperCase()}</span>
+        <h3 style="font-size:18px; margin-bottom:20px; line-height:1.4;">${qq.text}</h3>
+        ${p.responses.length===0 ? `<p style="color:var(--ink-faint); font-size:13.5px; font-weight:600;">Waiting for responses…</p>` : liveAggregateHTML(qq,pq)}
+      </div>
+
+      <div style="margin-top:20px; display:flex; justify-content:center; gap:12px; flex-wrap:wrap;">
+        <button class="btn btn-mint" onclick="simulateLiveJoins()">⚡ Simulate Responses</button>
+        <button class="btn btn-ghost" onclick="endLivePulse()">End Pulse</button>
+        <button class="btn btn-primary" ${p.liveQIndex>=p.questions.length-1?'disabled':''} onclick="nextLiveQuestion()">Next Question →</button>
+      </div>
+    </div>
+    <div class="join-link" style="display:block; text-align:center; margin:0 auto; width:fit-content;">gummygum.app/join/${p.joinCode.replace(' ','')}</div>
+    <div style="text-align:center; margin-top:14px;"><button class="btn-text" onclick="state.host.screen='home'; render();">← Back to your pulses</button></div>
+  </div>`;
+};
+function liveAggregateHTML(qq,pq){
+  if(qq.type==='rating') return `<div class="bignum-result">${pq.avg} <span style="font-size:16px;color:var(--ink-faint);">/ ${qq.scaleMax}</span></div>`;
+  if(qq.type==='likert'){
+    return `<div class="bignum-result">${pq.avg} <span style="font-size:16px;color:var(--ink-faint);">/ 5</span></div><p style="font-size:11.5px; color:var(--ink-faint); margin-top:6px; font-weight:600;">Average agreement across ${pq.answered} responses</p>`;
+  }
+  if(qq.type==='single'||qq.type==='multi'){
+    const total = pq.dist.reduce((a,b)=>a+b,0)||1;
+    return qq.options.map((o,i)=>{
+      const pct = Math.round(pq.dist[i]/total*100);
+      return `<div class="result-bar-row"><div class="result-bar-head"><span>${o}</span><span>${pct}%</span></div><div class="result-bar-track"><div class="result-bar-fill" style="width:${pct}%; background:var(--accent);"></div></div></div>`;
+    }).join('');
+  }
+  // open
+  return `<div style="display:flex;flex-direction:column;gap:10px;">${pq.comments.slice(0,3).map(c=>`<div class="comment-card" style="border-radius:12px;">${c.text}</div>`).join('') || '<p style="color:var(--ink-faint); font-size:13px;">No responses to this question yet.</p>'}</div>`;
+}
+function simulateLiveJoins(){
+  const p = activePulse();
+  const target = p.participantCount;
+  const step = ()=>{
+    if(p.responses.length < target){
+      const batch = Math.ceil(target/6);
+      for(let i=0;i<batch && p.responses.length<target;i++){
+        p.responses.push({id:'r'+Math.random().toString(36).slice(2,9), answers:fakeRespondentAnswers(p.questions), isReal:false});
+      }
+      render();
+      setTimeout(step, 350);
+    }
+  };
+  step();
+}
+function nextLiveQuestion(){ activePulse().liveQIndex++; render(); }
+function endLivePulse(){ activePulse().status='completed'; openSnapshot(activePulse().id); }
+window.simulateLiveJoins=simulateLiveJoins; window.nextLiveQuestion=nextLiveQuestion; window.endLivePulse=endLivePulse;
+
+/* ---------- PRIVATE STATUS ---------- */
+HOST_RENDERERS['private-status'] = function(){
+  const p = activePulse();
+  const pct = Math.round(p.responses.length/p.participantCount*100);
+  return `<div class="pane pane-narrow fade-in">
+    <div class="live-hero">
+      <div class="eyebrow">Private Pulse · Sent</div>
+      <h2 style="font-size:22px;">${p.name}</h2>
+      <p style="color:var(--ink-soft); font-size:13px; margin-top:8px;">${p.participantCount} employees invited by email</p>
+    </div>
+    <div class="card-surface" style="padding:30px; text-align:center;">
+      <div class="bignum-result" style="font-size:46px;">${p.responses.length} / ${p.participantCount}</div>
+      <p style="color:var(--ink-faint); font-size:13px; margin:6px 0 18px;">responses (${pct}%)</p>
+      <div class="result-bar-track" style="max-width:320px; margin:0 auto 22px;"><div class="result-bar-fill" style="width:${pct}%; background:var(--mint);"></div></div>
+      <div style="display:flex; gap:12px; justify-content:center;">
+        <button class="btn btn-mint" onclick="simulatePrivateResponses()">⚡ Simulate Responses</button>
+        <button class="btn btn-primary" ${p.responses.length===0?'disabled':''} onclick="openSnapshot('${p.id}')">View Snapshot</button>
+      </div>
+    </div>
+    <div style="text-align:center; margin-top:18px;"><button class="btn-text" onclick="state.host.screen='home'; render();">← Back to your pulses</button></div>
+  </div>`;
+};
+function simulatePrivateResponses(){
+  const p = activePulse();
+  const step = ()=>{
+    if(p.responses.length < p.participantCount){
+      const batch = Math.ceil(p.participantCount/6);
+      for(let i=0;i<batch && p.responses.length<p.participantCount;i++){
+        p.responses.push({id:'r'+Math.random().toString(36).slice(2,9), answers:fakeRespondentAnswers(p.questions), isReal:false});
+      }
+      render();
+      setTimeout(step, 300);
+    } else {
+      p.status='completed';
+    }
+  };
+  step();
+}
+window.simulatePrivateResponses=simulatePrivateResponses;
+
+/* ---------- SNAPSHOT — history + analytics, together, per pulse ---------- */
+HOST_RENDERERS['snapshot'] = function(){
+  const p = snapshotPulse();
+  const snap = computeSnapshot(p);
+  const rate = p.participantCount? Math.round(p.responses.length/p.participantCount*100) : 0;
+  const filtered = state.host.commentFilter==='all' ? snap.allComments : snap.allComments.filter(c=>c.tag===state.host.commentFilter);
+
+  return `<div class="pane fade-in">
+    <div style="margin-bottom:8px;"><button class="btn-text" onclick="state.host.screen='home'; render();">← All pulses</button></div>
+    <div class="results-top">
+      <div>
+        <div class="eyebrow">${p.name}</div>
+        <h2 style="font-size:24px;">Snapshot</h2>
+        <p style="color:var(--ink-faint); font-size:12.5px; margin-top:4px; font-family:var(--font-mono);">${p.responses.length} responses · ${rate}% response rate ${statusBadgeHTML(p.status)}</p>
+      </div>
+      ${snap.overall!=null? `<div class="overall-score"><span class="n">${snap.overall}</span><span style="color:var(--ink-faint); font-size:13px;">/ 5 overall</span></div>` : ''}
+    </div>
+
+    ${snap.categories.length? `
+    <div class="section-title">What's standing out</div>
+    <div class="category-grid">
+      ${snap.categories.map(c=>{
+        const pct = c.score/5*100;
+        const tag = c.score>=4? {t:'Strong area', c:'var(--mint)'} : (c.score<3.5? {t:'Needs attention', c:'var(--amber)'} : {t:'Steady', c:'var(--ink-faint)'});
+        return `<div class="cat-card">
+          <div class="cat-name"><span class="cat-dot" style="background:var(--accent)"></span>${c.name}</div>
+          <div class="cat-score">${c.score}</div>
+          <div class="cat-track"><div class="cat-fill" style="width:${pct}%; background:var(--accent);"></div></div>
+          <span class="cat-tag" style="background:${tag.c}22; color:${tag.c};">${tag.t}</span>
+        </div>`;
+      }).join('')}
+    </div>` : `<div class="card-surface" style="padding:22px; margin-top:10px;"><p style="color:var(--ink-faint); font-size:13.5px;">No responses yet — category scores will appear here once people start answering.</p></div>`}
+
+    <div class="section-title">All questions asked</div>
+    <div class="q-list">
+    ${snap.perQuestion.map((pq,i)=>questionSnapshotRowHTML(pq,i)).join('')}
+    </div>
+
+    ${snap.allComments.length? `
+    <div class="section-title">What your team is saying</div>
+    <div class="comment-filters">
+      ${['all','positive','neutral','attention'].map(f=>`<button class="chip ${state.host.commentFilter===f?'active':''}" onclick="setCommentFilter('${f}')">${f==='all'?'All':(f==='attention'?'Needs attention':f[0].toUpperCase()+f.slice(1))}</button>`).join('')}
+    </div>
+    <div class="comment-grid">
+      ${filtered.map(c=>`<div class="comment-card">"${c.text}"${c.isReal? `<span title="Real submission" style="position:absolute; top:15px; left:15px; font-size:9px; font-weight:800; color:var(--accent-dark);">●</span>`:''}<span class="comment-tag" style="background:${c.tag==='positive'?'var(--mint)':(c.tag==='attention'?'var(--amber)':'var(--ink-faint)')};"></span></div>`).join('')}
+    </div>` : ''}
+
+    <div style="margin-top:34px;">
+      <button class="btn btn-ghost" onclick="state.host.screen='home'; render();">← Back to your pulses</button>
+    </div>
+
+    <div class="dev-note">
+      <b>Developer / design note — reuse in Change Metre</b><br>
+      Pulse Survey is standalone: it owns the questions, response controls, the employee-facing experience, collection, history, and these results. Change Metre (a separate, standalone experience under Measure) owns scheduling and longitudinal comparison — it will later import the same Pulse blocks as a repeatable measurement inside a tracked timeline.
+      <div class="flow-diagram">
+        CHANGE METRE<br>
+        &nbsp;&nbsp;Baseline<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;↓<br>
+        &nbsp;&nbsp;Pulse Survey<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;↓<br>
+        &nbsp;&nbsp;Checkpoint → Pulse Survey<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;↓<br>
+        &nbsp;&nbsp;Checkpoint → Pulse Survey<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;↓<br>
+        &nbsp;&nbsp;Endline → Compare Change
+      </div>
+      Reusable blocks built here: Pulse welcome, question card, rating scale, Likert scale, choice question, open text question, progress indicator, navigation, completion screen, privacy notice, snapshot card, response distribution, comment card, pulse status card, and live session state. Each is implemented as an isolated render function (<code>renderRating</code>, <code>renderLikert</code>, <code>renderChoice</code>, <code>renderOpen</code>, <code>computeSnapshot</code>, the <code>phoneShell</code> wrapper, etc.) so Change Metre can call them directly against its own scheduling data rather than reimplementing them.
+    </div>
+  </div>`;
+};
+function questionSnapshotRowHTML(pq,i){
+  const qq = pq.q;
+  let summary = '';
+  if(qq.type==='rating'||qq.type==='likert') summary = pq.avg!=null? `<span class="q-points-badge" style="background:var(--accent-soft); color:var(--ink);">avg ${pq.avg} / 5</span>` : `<span class="q-type-badge">No responses yet</span>`;
+  else if(qq.type==='single'||qq.type==='multi') summary = `<span class="q-type-badge">${pq.answered} answered</span>`;
+  else summary = `<span class="q-type-badge">${pq.answered} comments</span>`;
+  return `<div class="q-card" style="cursor:default;">
+    <div class="q-head" style="cursor:default;">
+      <span class="q-num">${String(i+1).padStart(2,'0')}</span>
+      <div class="q-summary">
+        <div class="q-text">${qq.text}</div>
+        <div class="q-type-row"><span class="q-type-badge">${QTYPES[qq.type].icon} ${QTYPES[qq.type].label}</span>${qq.topic? `<span class="q-type-badge">${qq.topic}</span>`:''}</div>
+      </div>
+      ${summary}
+    </div>
+  </div>`;
+}
+function setCommentFilter(f){ state.host.commentFilter=f; render(); }
+window.setCommentFilter=setCommentFilter;
+
+/* =========================================================
+   PREVIEW MODAL (Host → "Preview as Employee", uses the DRAFT)
+   ========================================================= */
+function openPreview(){
+  state.previewOpen=true;
+  state.preview = {qIndex:0, answers:{}};
+  render();
+}
+function closePreview(){
+  state.previewOpen=false;
+  const modal = document.getElementById('previewModal');
+  if(modal) modal.classList.remove('show');
+  render();
+}
+window.openPreview=openPreview; window.closePreview=closePreview;
+
+function renderPreviewModal(){
+  let modal = document.getElementById('previewModal');
+  if(!modal){
+    modal = document.createElement('div');
+    modal.id='previewModal';
+    modal.className='modal-overlay';
+    document.body.appendChild(modal);
+  }
+  modal.classList.add('show');
+  const qs = state.host.draft.questions;
+  const p = state.preview;
+  const qq = qs[p.qIndex];
+  let body;
+  if(!qq){
+    body = `<div class="emp-center"><div class="emp-check-anim">✓</div><h2>Thanks for sharing.</h2><p>Your response has been recorded.</p></div>`;
+  } else {
+    const picked = p.answers[qq.id];
+    let inputHTML='';
+    if(qq.type==='rating') inputHTML = renderRating(qq,picked,'previewPick');
+    else if(qq.type==='likert') inputHTML = renderLikert(qq,picked,'previewPick');
+    else if(qq.type==='single') inputHTML = renderChoice(qq,picked,'previewPick');
+    else if(qq.type==='multi') inputHTML = renderChoice(qq,picked,'previewPickMulti',true);
+    else inputHTML = renderOpen(picked,'previewOpenInput','previewOpenBox') + `<div style="margin-top:16px; text-align:right;"><button class="btn btn-primary btn-sm" onclick="previewNext()">Next</button></div>`;
+    body = `<div class="emp-qcount">Question ${p.qIndex+1} of ${qs.length}</div>
+      <div class="emp-progress-track"><div class="emp-progress-fill" style="width:${(p.qIndex/qs.length)*100}%"></div></div>
+      <div class="emp-qtext">${qq.text}</div>
+      ${inputHTML}`;
+  }
+  modal.innerHTML = `<div style="position:relative;">
+    <button class="btn btn-icon" style="position:absolute; top:-52px; right:0; background:#fff;" onclick="closePreview()">✕</button>
+    <div class="phone">
+      <div class="phone-notch"></div>
+      <div class="phone-screen">
+        <div class="emp-mark">${logoSVG()}<span>PREVIEW · EMPLOYEE VIEW</span></div>
+        ${body}
+      </div>
+    </div>
+  </div>`;
+}
+function previewPick(i){ const p=state.preview; const qq=state.host.draft.questions[p.qIndex]; p.answers[qq.id]=i; renderPreviewModal(); setTimeout(previewNext,260); }
+function previewPickMulti(i){
+  const p=state.preview; const qq=state.host.draft.questions[p.qIndex];
+  const arr = p.answers[qq.id] || [];
+  const idx = arr.indexOf(i);
+  if(idx>-1) arr.splice(idx,1); else arr.push(i);
+  p.answers[qq.id]=arr; renderPreviewModal();
+}
+function previewOpenInput(v){ state.preview.answers[state.host.draft.questions[state.preview.qIndex].id]=v; }
+function previewNext(){ state.preview.qIndex++; renderPreviewModal(); }
+window.previewPick=previewPick; window.previewPickMulti=previewPickMulti; window.previewOpenInput=previewOpenInput; window.previewNext=previewNext;
+
+/* =========================================================
+   EMPLOYEE RENDERERS (mobile phone frame, standalone view)
+   Reads from activePulse() — the pulse currently deployed.
+   On completion, pushes a REAL respondent into that pulse's
+   responses[], which the Host's snapshot immediately reflects.
+   ========================================================= */
+const EMP_RENDERERS = {};
+const EMP_POST = {};
+
+function phoneShell(inner){
+  return `<div class="phone-stage"><div class="phone"><div class="phone-notch"></div><div class="phone-screen">${inner}</div></div></div>`;
+}
+
+EMP_RENDERERS['entry'] = function(){
+  return phoneShell(`
+    <div class="emp-mark">${logoSVG()}<span>GUMMYGUM</span></div>
+    <div class="emp-center">
+      <h2>No pulse to take yet</h2>
+      <p>Once a Host deploys a pulse, it'll open here.</p>
+      <button class="btn btn-ghost" style="margin-top:18px;" onclick="setTopView('host')">Go create one</button>
+    </div>
+  `);
+};
+
+/* ---------- entry: join (live) ---------- */
+EMP_RENDERERS['join'] = function(){
+  const p = activePulse();
+  return phoneShell(`
+    <div class="emp-mark">${logoSVG()}<span>GUMMYGUM</span></div>
+    <div class="emp-center">
+      <div class="eyebrow" style="text-align:center;">Join Pulse</div>
+      <h2>Enter the code from your host</h2>
+      <input class="join-input" maxlength="7" placeholder="000 000" value="${state.employee.joinInput}" oninput="empJoinInput(this.value)">
+      <button class="btn btn-primary" style="width:100%; justify-content:center;" onclick="empJoinSubmit()">Join</button>
+      <p style="font-size:11.5px; color:var(--ink-faint); margin-top:14px;">Hint: try <b>${p.joinCode}</b></p>
+    </div>
+  `);
+};
+function empJoinInput(v){ state.employee.joinInput=v; }
+function empJoinSubmit(){
+  const p = activePulse();
+  if(state.employee.joinInput.replace(/\s/g,'') === p.joinCode.replace(/\s/g,'')){
+    state.employee.screen='welcome'; render();
+  } else { showToast('That code doesn\'t match — try '+p.joinCode); }
+}
+window.empJoinInput=empJoinInput; window.empJoinSubmit=empJoinSubmit;
+
+/* ---------- entry: invite (private) ---------- */
+EMP_RENDERERS['invite'] = function(){
+  return phoneShell(`
+    <div class="emp-mark">${logoSVG()}<span>GUMMYGUM</span></div>
+    <div class="emp-center">
+      <div style="font-size:34px; margin-bottom:14px;">✉️</div>
+      <div class="eyebrow" style="text-align:center;">New message</div>
+      <h2>You've been invited to a pulse</h2>
+      <p>Your team lead would like to hear how work is going. It only takes a couple of minutes.</p>
+      <button class="btn btn-primary" style="margin-top:20px;" onclick="state.employee.screen='welcome'; render();">Open Pulse</button>
+    </div>
+  `);
+};
+
+/* ---------- welcome ---------- */
+EMP_RENDERERS['welcome'] = function(){
+  const p = activePulse();
+  const mins = Math.max(1,Math.round(p.questions.length*0.4*10)/10);
+  return phoneShell(`
+    <div class="emp-mark">${logoSVG()}<span>${p.delivery==='live'?'LIVE PULSE':'PRIVATE PULSE'}</span></div>
+    <div class="emp-center">
+      <h2>${p.name || "How's work going?"}</h2>
+      <p>${p.description || "We'd like to understand how you're experiencing work right now."}</p>
+      <div class="emp-meta-row"><span>${p.questions.length} questions</span><span>·</span><span>~${mins} min</span></div>
+      <button class="btn btn-primary" style="width:100%; justify-content:center;" onclick="empStart()">Start</button>
+      ${p.privacy==='anonymous' ? `<div class="privacy-note">🕶️ Your response is anonymous</div>` : `<div class="privacy-note">🪪 Your response will be identified</div>`}
+    </div>
+  `);
+};
+function empStart(){ state.employee.qIndex=0; state.employee.answers={}; state.employee.screen='question'; render(); }
+window.empStart = empStart;
+
+/* ---------- question ---------- */
+EMP_RENDERERS['question'] = function(){
+  const p = activePulse(); const e = state.employee;
+  const qq = p.questions[e.qIndex];
+  const picked = e.answers[qq.id];
+  let inputHTML='';
+  if(qq.type==='rating') inputHTML = renderRating(qq,picked,'empPick');
+  else if(qq.type==='likert') inputHTML = renderLikert(qq,picked,'empPick');
+  else if(qq.type==='single') inputHTML = renderChoice(qq,picked,'empPick');
+  else if(qq.type==='multi') inputHTML = renderChoice(qq,picked,'empPickMulti',true);
+  else inputHTML = renderOpen(picked,'empOpenInput','empOpenBox');
+
+  const showNext = qq.type==='open' || qq.type==='multi';
+  return phoneShell(`
+    <div class="emp-mark">${logoSVG()}<span>${p.delivery==='live'?'LIVE':'PULSE'}</span></div>
+    <div class="emp-qcount">Question ${e.qIndex+1} of ${p.questions.length}</div>
+    <div class="emp-progress-track"><div class="emp-progress-fill" style="width:${(e.qIndex/p.questions.length)*100}%"></div></div>
+    <div class="emp-qtext">${qq.text}</div>
+    ${inputHTML}
+    <div class="emp-nav-row">
+      <button class="btn-text" style="${e.qIndex===0?'visibility:hidden':''}" onclick="empBack()">← Back</button>
+      ${showNext ? `<button class="btn btn-primary btn-sm" onclick="empNext()">${e.qIndex===p.questions.length-1?'Submit':'Next'}</button>` : '<span></span>'}
+    </div>
+  `);
+};
+function empPick(i){
+  const p=activePulse(), e=state.employee; const qq=p.questions[e.qIndex];
+  e.answers[qq.id]=i; render();
+  setTimeout(empNext, 280);
+}
+function empPickMulti(i){
+  const p=activePulse(), e=state.employee; const qq=p.questions[e.qIndex];
+  const arr = e.answers[qq.id] || [];
+  const idx=arr.indexOf(i); if(idx>-1) arr.splice(idx,1); else arr.push(i);
+  e.answers[qq.id]=arr; render();
+}
+function empOpenInput(v){ const p=activePulse(),e=state.employee; e.answers[p.questions[e.qIndex].id]=v; }
+function empNext(){
+  const p=activePulse(), e=state.employee;
+  if(e.qIndex < p.questions.length-1){ e.qIndex++; render(); }
+  else { empSubmit(); }
+}
+function empBack(){ if(state.employee.qIndex>0){ state.employee.qIndex--; render(); } }
+window.empPick=empPick; window.empPickMulti=empPickMulti; window.empOpenInput=empOpenInput; window.empNext=empNext; window.empBack=empBack;
+
+/* ---------- REAL SUBMISSION — this is the wiring fix ---------- */
+function empSubmit(){
+  const p = activePulse();
+  const e = state.employee;
+  p.responses.push({id:'r'+Math.random().toString(36).slice(2,9), answers:{...e.answers}, isReal:true});
+  if(p.status==='live' || p.status==='collecting'){
+    // leave status as-is; Host decides when to end/close the pulse
+  }
+  e.completedPulseIds.push(p.id);
+  state.employee.screen='completion';
+  render();
+}
+
+/* ---------- completion ---------- */
+EMP_RENDERERS['completion'] = function(){
+  const p = activePulse();
+  return phoneShell(`
+    <div class="emp-mark">${logoSVG()}<span>GUMMYGUM</span></div>
+    <div class="emp-center">
+      <div class="emp-check-anim">✓</div>
+      <h2>Thanks for sharing.</h2>
+      <p>Your response has been recorded.</p>
+      ${p.privacy==='anonymous' ? `<div class="privacy-note">🕶️ Your response is anonymous</div>` : ''}
+      <button class="btn btn-ghost" style="margin-top:26px;" onclick="state.employee.screen='already'; render();">Done</button>
+    </div>
+  `);
+};
+
+/* ---------- already completed ---------- */
+EMP_RENDERERS['already'] = function(){
+  const p = activePulse();
+  return phoneShell(`
+    <div class="emp-mark">${logoSVG()}<span>GUMMYGUM</span></div>
+    <div class="emp-center">
+      <div style="font-size:30px; margin-bottom:14px;">✓</div>
+      <h2>Already completed</h2>
+      <p>You've already submitted ${p? '"'+p.name+'"' : 'this pulse'}. There's nothing more to do here.</p>
+    </div>
+  `);
+};
+
+/* =========================================================
+   INIT — seed a small pulse history so Home isn't empty on
+   first load: one pulse still collecting responses (so the
+   Employee side has something live to answer for real), and
+   two completed pulses with realistic historical data.
+   ========================================================= */
+(function seed(){
+  function makePulse({name, description, template, delivery, participantCount, privacy, createdDate, status, respondentCount}){
+    const questions = cloneQuestions(TEMPLATES[template].questions);
+    const id = 'p'+Math.random().toString(36).slice(2,9);
+    const responses = [];
+    for(let i=0;i<respondentCount;i++){
+      responses.push({id:'r'+Math.random().toString(36).slice(2,9), answers:fakeRespondentAnswers(questions), isReal:false});
+    }
+    return {
+      id, name, description, template, questions, delivery, scope:'team',
+      participantCount, privacy, joinCode:String(Math.floor(100000+Math.random()*900000)).replace(/(\d{3})(\d{3})/,'$1 $2'),
+      status, createdDate, liveQIndex:0, responses,
+    };
+  }
+
+  const activeOne = makePulse({
+    name:'Team Experience Pulse', description:'A quick check-in on how the team is doing this month.',
+    template:'team', delivery:'private', participantCount:20, privacy:'anonymous',
+    createdDate:'Sep 20', status:'collecting', respondentCount:6,
+  });
+  const historyOne = makePulse({
+    name:'Manager Support Check', description:'Understand how supported people feel by their manager.',
+    template:'manager', delivery:'private', participantCount:15, privacy:'anonymous',
+    createdDate:'Aug 12', status:'completed', respondentCount:13,
+  });
+  const historyTwo = makePulse({
+    name:'Workload Pulse', description:'Get an honest read on capacity and pace.',
+    template:'workload', delivery:'live', participantCount:24, privacy:'anonymous',
+    createdDate:'Jul 3', status:'completed', respondentCount:24,
+  });
+
+  state.host.pulses = [activeOne, historyOne, historyTwo];
+  state.host.activePulseId = activeOne.id;
+})();
+
+/* ---------- faint background texture ---------- */
+(function renderBgDeco(){
+  const el = document.getElementById('bgDeco');
+  if(!el) return;
+  const letters = ['X','H','I','D','C','V','U','O','N','S','R','T','B','E'];
+  const spots = [];
+  for(let i=0;i<16;i++){
+    spots.push({
+      ch: letters[Math.floor(Math.random()*letters.length)],
+      top: Math.random()*95+'%', left: Math.random()*96+'%',
+      size: 60+Math.random()*140,
+    });
+  }
+  el.innerHTML = spots.map(s=>`<span style="top:${s.top}; left:${s.left}; font-size:${s.size}px;">${s.ch}</span>`).join('');
+})();
+
+/* ---------- employee entry default ---------- */
+if(activePulse()){
+  state.employee.screen = activePulse().delivery==='live' ? 'join' : 'invite';
+}
+
+render();
+</script></body></html>

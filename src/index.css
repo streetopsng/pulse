@@ -1,0 +1,64 @@
+@import "tailwindcss";
+
+@theme {
+  --font-display: 'Baloo 2', sans-serif;
+  --font-body: 'Inter', sans-serif;
+  --font-mono: 'IBM Plex Mono', monospace;
+
+  --color-ink: #1B1224;
+  --color-ink-soft: #5B4F66;
+  --color-ink-faint: #9C90A8;
+
+  --color-accent: #7A4FE0;
+  --color-accent-dark: #5C33B0;
+  --color-accent-soft: #EFE4FB;
+  --color-accent-tint: #D9C2F5;
+
+  --color-bg-base: #FAF8FF;
+  --color-surface: #FFFFFF;
+  --color-surface-2: #F6F1FC;
+
+  --color-mint: #3FA66B;
+  --color-mint-soft: #DFF3E7;
+
+  --color-grape: #5B3E99;
+  --color-grape-soft: #E6DCF7;
+
+  --color-amber: #9457C7;
+  --color-amber-soft: #F1E4FA;
+
+  --color-line-soft: #E8E0F5;
+  --color-gray-soft: #EFEAF7;
+
+  --shadow-hard: 4px 4px 0px #1B1224;
+  --shadow-hard-sm: 3px 3px 0px #1B1224;
+  --shadow-hard-lg: 6px 6px 0px #1B1224;
+  --shadow-hard-xl: 8px 8px 0px #1B1224;
+}
+
+body {
+  background-color: #FAF8FF;
+  color: #1B1224;
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  background-image:
+    radial-gradient(circle at 8% 10%, rgba(122, 79, 224, 0.05), transparent 40%),
+    radial-gradient(circle at 92% 85%, rgba(122, 79, 224, 0.05), transparent 40%);
+  min-height: 100vh;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+/* Console frame custom polygon clip path */
+.clip-console {
+  clip-path: polygon(0 24px, 24px 0, calc(100% - 24px) 0, 100% 24px, 100% calc(100% - 24px), calc(100% - 24px) 100%, 24px 100%, 0 calc(100% - 24px));
+}
+
+/* Hazard diagonal stripes */
+.hazard-stripes {
+  background-image: repeating-linear-gradient(115deg, #7A4FE0 0 6px, transparent 6px 11px);
+}
