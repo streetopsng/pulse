@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { Button } from '../common/Button';
 import { Card } from '../common/Card';
 import { PeopleIcon, ClipboardIcon, BoltIcon, KeyIcon } from '../common/Icons';
@@ -33,7 +34,9 @@ export function LiveSession() {
   const pq = snap.perQuestion[p.liveQIndex];
 
   function handleCopyLink() {
-    const url = `${window.location.origin}/join/${p.joinCode.replace(/\s/g, '')}`;
+    const baseUrl = window.location.href.split('#')[0];
+    const cleanBase = baseUrl.endsWith('/') ? baseUrl : baseUrl + '/';
+    const url = `${cleanBase}#/join/${p.joinCode.replace(/\s/g, '')}`;
     if (navigator.clipboard?.writeText) {
       navigator.clipboard.writeText(url);
       showToast('Participant link copied to clipboard!');
@@ -153,14 +156,14 @@ export function LiveSession() {
             <Button variant="ghost" size="sm" onClick={handleCopyLink}>
               📋 Copy Join Link
             </Button>
-            <a
-              href={`/join/${p.joinCode.replace(/\s/g, '')}`}
+            <Link
+              to={`/join/${p.joinCode.replace(/\s/g, '')}`}
               target="_blank"
               rel="noopener noreferrer"
               className="text-xs font-black text-ink underline underline-offset-4 decoration-accent hover:text-accent-dark"
             >
               Open in new tab ↗
-            </a>
+            </Link>
           </div>
         </div>
 

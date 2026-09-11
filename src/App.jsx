@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { PulseProvider } from './context/PulseContext';
 import { TopBar } from './components/layout/TopBar';
 import { HostView } from './components/host/HostView';
@@ -36,7 +36,7 @@ function EmployeeLayout() {
 export default function App() {
   return (
     <PulseProvider>
-      <BrowserRouter>
+      <HashRouter>
         <Routes>
           {/* Host Administration & Analytics */}
           <Route path="/" element={<HostLayout />} />
@@ -48,7 +48,7 @@ export default function App() {
           {/* Fallback */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
-      </BrowserRouter>
+      </HashRouter>
     </PulseProvider>
   );
 }

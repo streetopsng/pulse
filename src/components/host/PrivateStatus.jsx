@@ -30,7 +30,9 @@ export function PrivateStatus() {
     : 0;
 
   function handleCopyLink() {
-    const url = `${window.location.origin}/join/${p.joinCode.replace(/\s/g, '')}`;
+    const baseUrl = window.location.href.split('#')[0];
+    const cleanBase = baseUrl.endsWith('/') ? baseUrl : baseUrl + '/';
+    const url = `${cleanBase}#/join/${p.joinCode.replace(/\s/g, '')}`;
     if (navigator.clipboard?.writeText) {
       navigator.clipboard.writeText(url);
       showToast('Participant link copied to clipboard!');
