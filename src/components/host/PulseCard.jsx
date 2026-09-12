@@ -50,29 +50,29 @@ export function PulseCard({ pulse }) {
   return (
     <div
       onClick={() => openPulseCard(pulse.id)}
-      className="bg-surface border border-ink/10 hover:border-accent/40 rounded-2xl p-5 sm:p-6 shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-pointer group"
+      className="bg-white border border-slate-200/90 hover:border-purple-300 hover:shadow-md rounded-2xl p-5 sm:p-6 transition-all duration-200 cursor-pointer group"
     >
       {/* Top Header */}
       <div className="flex items-start sm:items-center justify-between gap-3.5 mb-4">
         <div className="flex items-center gap-3.5 min-w-0">
-          <div
-            className={`w-10 h-10 rounded-xl border border-ink/10 ${tmpl.bgColor} flex items-center justify-center text-lg shrink-0 shadow-2xs`}
-          >
-            {tmpl.icon}
+          <div className="w-10 h-10 rounded-xl bg-purple-50 border border-purple-100 flex items-center justify-center text-lg shrink-0 text-purple-600 shadow-2xs">
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
           </div>
 
           <div className="min-w-0">
-            <h3 className="font-display font-bold text-base sm:text-lg text-ink truncate">
+            <h3 className="font-semibold text-base sm:text-lg text-slate-900 truncate group-hover:text-purple-700 transition-colors">
               {pulse.name}
             </h3>
-            <div className="flex items-center gap-2 text-xs font-bold text-ink-soft mt-0.5">
-              <span className="flex items-center gap-1 text-ink-soft">
-                <CalendarIcon className="w-3.5 h-3.5" />
+            <div className="flex items-center gap-2 text-xs text-slate-500 mt-1">
+              <span className="flex items-center gap-1">
+                <CalendarIcon className="w-3.5 h-3.5 text-slate-400" />
                 {pulse.createdDate}
               </span>
-              <span>·</span>
-              <span>{pulse.delivery === 'live' ? 'Live' : 'Private'}</span>
-              <span>·</span>
+              <span className="text-slate-300">·</span>
+              <span className="font-medium text-slate-600">{pulse.delivery === 'live' ? 'Live Poll' : 'Async Survey'}</span>
+              <span className="text-slate-300">·</span>
               <span>{pulse.questions.length} questions</span>
             </div>
           </div>
