@@ -1,5 +1,14 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { TEMPLATES, cloneQuestions, createQuestion } from '../constants/templates';
+import { DIRECTORY, fakeRespondentAnswers } from '../constants/directory';
+import { isFirebaseConfigured } from '../config/firebase';
+import {
+  subscribeToPulses,
+  savePulseToFirebase,
+  submitResponseToFirebase,
+  updatePulseStatusInFirebase,
+  deletePulseFromFirebase,
+} from '../services/pulseFirebaseService';
 
 const PulseContext = createContext(null);
 
@@ -7,8 +16,6 @@ const STORAGE_KEY_PULSES = 'pulse_surveys_data';
 const STORAGE_KEY_COMPLETED = 'pulse_completed_ids';
 
 function createBlankDraft() {
-  const randomNum = Math.floor(100000 + Math.random() * 900000);
-  const joinCode = String(randomNum).replace(/(\d{3})(\d{3})/, '$1 $2');
   return {
     name: '',
     description: '',
@@ -16,11 +23,89 @@ function createBlankDraft() {
     questions: [],
     openQ: null,
     delivery: 'private',
-    scope: 'team',
-    participantCount: 20,
+    invitedEmployees: DIRECTORY.slice(0, 4).map((p) => ({ ...p })),
     privacy: 'anonymous',
-    joinCode,
   };
+}
+
+function createSeedPulses() {
+  function makePulse({
+    name,
+    description,
+    template,
+    delivery,
+    inviteCount,
+    privacy,
+    createdDate,
+    status,
+    respondentCount,
+  }) {
+    const tmplQuestions = TEMPLATES[template]?.questions || [];
+    const questions = cloneQuestions(tmplQuestions);
+    const id = 'p_' + Math.random().toString(36).slice(2, 9);
+    const invitedEmployees = DIRECTORY.slice(0, inviteCount).map((p) => ({ ...p }));
+    const responses = [];
+    for (let i = 0; i < respondentCount; i++) {
+      responses.push({
+        id: 'r_' + Math.random().toString(36).slice(2, 9),
+        answers: fakeRespondentAnswers(questions),
+        isReal: false,
+        submittedAt: new Date().toISOString(),
+      });
+    }
+    return {
+      id,
+      name,
+      description,
+      template,
+      questions,
+      delivery,
+      invitedEmployees,
+      privacy,
+      status,
+      createdDate,
+      liveQIndex: 0,
+      responses,
+    };
+  }
+
+  const activeOne = makePulse({
+    name: 'Team Experience Pulse',
+    description: 'A quick check-in on how the team is doing this month.',
+    template: 'team',
+    delivery: 'private',
+    inviteCount: 8,
+    privacy: 'anonymous',
+    createdDate: 'Sep 20',
+    status: 'collecting',
+    respondentCount: 5,
+  });
+
+  const historyOne = makePulse({
+    name: 'Manager Support Check',
+    description: 'Understand how supported people feel by their manager.',
+    template: 'manager',
+    delivery: 'private',
+    inviteCount: 9,
+    privacy: 'anonymous',
+    createdDate: 'Aug 12',
+    status: 'completed',
+    respondentCount: 8,
+  });
+
+  const historyTwo = makePulse({
+    name: 'Workload Pulse',
+    description: 'Get an honest read on capacity and pace.',
+    template: 'workload',
+    delivery: 'live',
+    inviteCount: 10,
+    privacy: 'anonymous',
+    createdDate: 'Jul 3',
+    status: 'completed',
+    respondentCount: 10,
+  });
+
+  return [activeOne, historyOne, historyTwo];
 }
 
 function getStoredPulses() {
@@ -28,12 +113,20 @@ function getStoredPulses() {
     const raw = localStorage.getItem(STORAGE_KEY_PULSES);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) return parsed;
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        // Ensure legacy pulses have invitedEmployees
+        return parsed.map((p) => ({
+          ...p,
+          invitedEmployees:
+            p.invitedEmployees ||
+            DIRECTORY.slice(0, p.participantCount || 8).map((emp) => ({ ...emp })),
+        }));
+      }
     }
   } catch (e) {
     console.error('Failed to load pulses from storage', e);
   }
-  return [];
+  return createSeedPulses();
 }
 
 function getStoredCompleted() {
@@ -52,16 +145,18 @@ function getStoredCompleted() {
 export function PulseProvider({ children }) {
   const [pulses, setPulses] = useState(getStoredPulses);
   const [activePulseId, setActivePulseId] = useState(() => pulses[0]?.id || null);
-  const [snapshotPulseId, setSnapshotPulseId] = useState(null);
+  const [snapshotPulseId, setSnapshotPulseId] = useState(() => pulses[1]?.id || null);
 
   const [topView, setTopViewState] = useState('host'); // 'host' | 'employee'
-  const [hostScreen, setHostScreen] = useState('welcome'); // 'welcome'|'home'|'create'|'builder'|'config'|'deploy'|'live-session'|'private-status'|'snapshot'
+  const [hostScreen, setHostScreen] = useState('welcome');
   const [draft, setDraft] = useState(createBlankDraft);
   const [commentFilter, setCommentFilter] = useState('all');
 
   // Employee state
-  const [empScreen, setEmpScreen] = useState('join');
-  const [empJoinInput, setEmpJoinInput] = useState('');
+  const [empScreen, setEmpScreen] = useState('invite');
+  const [emailInput, setEmailInput] = useState('');
+  const [emailError, setEmailError] = useState(null);
+  const [verifiedEmail, setVerifiedEmail] = useState(null);
   const [empQIndex, setEmpQIndex] = useState(0);
   const [empAnswers, setEmpAnswers] = useState({});
   const [completedPulseIds, setCompletedPulseIds] = useState(getStoredCompleted);
@@ -74,8 +169,8 @@ export function PulseProvider({ children }) {
   // Toast state
   const [toastMsg, setToastMsg] = useState(null);
 
-  const activePulse = pulses.find((p) => p.id === activePulseId) || null;
-  const snapshotPulse = pulses.find((p) => p.id === snapshotPulseId) || null;
+  const activePulse = pulses.find((p) => p.id === activePulseId) || pulses[0] || null;
+  const snapshotPulse = pulses.find((p) => p.id === snapshotPulseId) || pulses[0] || null;
 
   // Persist pulses to localStorage
   useEffect(() => {
@@ -95,7 +190,7 @@ export function PulseProvider({ children }) {
     }
   }, [completedPulseIds]);
 
-  // Multi-tab sync: listen for storage changes from other tabs/windows
+  // Multi-tab sync
   useEffect(() => {
     function handleStorageEvent(e) {
       if (e.key === STORAGE_KEY_PULSES && e.newValue) {
@@ -124,6 +219,19 @@ export function PulseProvider({ children }) {
     return () => window.removeEventListener('storage', handleStorageEvent);
   }, []);
 
+  // Real-time Firestore sync when configured
+  useEffect(() => {
+    if (!isFirebaseConfigured) return;
+
+    const unsubscribe = subscribeToPulses((firestorePulses) => {
+      if (firestorePulses && firestorePulses.length > 0) {
+        setPulses(firestorePulses);
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
   function showToast(msg) {
     setToastMsg(msg);
     setTimeout(() => {
@@ -138,10 +246,10 @@ export function PulseProvider({ children }) {
         if (completedPulseIds.includes(activePulse.id)) {
           setEmpScreen('already');
         } else {
-          setEmpScreen(activePulse.delivery === 'live' ? 'join' : 'invite');
+          setEmpScreen('invite');
         }
       } else {
-        setEmpScreen('join');
+        setEmpScreen('entry');
       }
     }
   }
@@ -167,12 +275,16 @@ export function PulseProvider({ children }) {
     setPulses((prev) => prev.filter((p) => p.id !== id));
     if (activePulseId === id) setActivePulseId(null);
     if (snapshotPulseId === id) setSnapshotPulseId(null);
+    deletePulseFromFirebase(id).catch((err) => console.warn('Firebase delete fallback:', err));
     showToast('Pulse survey deleted');
   }
 
   function closePulse(id) {
     setPulses((prev) =>
       prev.map((p) => (p.id === id ? { ...p, status: 'completed' } : p))
+    );
+    updatePulseStatusInFirebase(id, 'completed').catch((err) =>
+      console.warn('Firebase status update fallback:', err)
     );
     showToast('Pulse survey closed');
   }
@@ -194,6 +306,20 @@ export function PulseProvider({ children }) {
 
   function updateDraft(updates) {
     setDraft((prev) => ({ ...prev, ...updates }));
+  }
+
+  function toggleInvitee(email) {
+    setDraft((prev) => {
+      const list = [...(prev.invitedEmployees || [])];
+      const idx = list.findIndex((p) => p.email === email);
+      if (idx > -1) {
+        list.splice(idx, 1);
+      } else {
+        const person = DIRECTORY.find((p) => p.email === email);
+        if (person) list.push({ ...person });
+      }
+      return { ...prev, invitedEmployees: list };
+    });
   }
 
   // Question builder operations
@@ -303,12 +429,10 @@ export function PulseProvider({ children }) {
       template: draft.template,
       questions: cloneQuestions(draft.questions),
       delivery: draft.delivery,
-      scope: draft.scope,
-      participantCount: Number(draft.participantCount) || 20,
+      invitedEmployees: (draft.invitedEmployees || []).map((p) => ({ ...p })),
       privacy: draft.privacy,
-      joinCode: draft.joinCode,
       status: draft.delivery === 'live' ? 'live' : 'collecting',
-      createdDate: new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' }).format(new Date()),
+      createdDate: 'Today',
       liveQIndex: 0,
       responses: [],
     };
@@ -316,7 +440,14 @@ export function PulseProvider({ children }) {
     setPulses((prev) => [newPulse, ...prev]);
     setActivePulseId(id);
     setHostScreen(draft.delivery === 'live' ? 'live-session' : 'private-status');
-    showToast(draft.delivery === 'live' ? 'Live pulse started' : `Pulse sent to ${draft.participantCount} people`);
+    savePulseToFirebase(newPulse).catch((err) =>
+      console.warn('Firebase save fallback:', err)
+    );
+    showToast(
+      draft.delivery === 'live'
+        ? 'Live pulse started — invites sent by email'
+        : `Pulse sent to ${draft.invitedEmployees.length} people by email`
+    );
   }
 
   function nextLiveQuestion() {
@@ -338,36 +469,69 @@ export function PulseProvider({ children }) {
     openSnapshot(activePulse.id);
   }
 
+  function simulateLiveJoins() {
+    if (!activePulse) return;
+    const target = activePulse.invitedEmployees?.length || 10;
+    setPulses((prev) => {
+      const current = prev.find((p) => p.id === activePulse.id);
+      if (!current || current.responses.length >= target) return prev;
+      const batch = Math.ceil(target / 6);
+      const added = [];
+      for (let i = 0; i < batch && current.responses.length + added.length < target; i++) {
+        added.push({
+          id: 'r_' + Math.random().toString(36).slice(2, 9),
+          answers: fakeRespondentAnswers(current.questions),
+          isReal: false,
+          submittedAt: new Date().toISOString(),
+        });
+      }
+      return prev.map((p) =>
+        p.id === current.id ? { ...p, responses: [...p.responses, ...added] } : p
+      );
+    });
+    showToast('Simulated incoming live responses');
+  }
+
+  function simulatePrivateResponses() {
+    if (!activePulse) return;
+    const target = activePulse.invitedEmployees?.length || 10;
+    setPulses((prev) => {
+      const current = prev.find((p) => p.id === activePulse.id);
+      if (!current || current.responses.length >= target) return prev;
+      const batch = Math.ceil(target / 6);
+      const added = [];
+      for (let i = 0; i < batch && current.responses.length + added.length < target; i++) {
+        added.push({
+          id: 'r_' + Math.random().toString(36).slice(2, 9),
+          answers: fakeRespondentAnswers(current.questions),
+          isReal: false,
+          submittedAt: new Date().toISOString(),
+        });
+      }
+      const newResponses = [...current.responses, ...added];
+      const newStatus = newResponses.length >= target ? 'completed' : current.status;
+      return prev.map((p) =>
+        p.id === current.id
+          ? { ...p, responses: newResponses, status: newStatus }
+          : p
+      );
+    });
+    showToast('Simulated incoming private responses');
+  }
+
   // Employee Flow Actions
-  function empJoinSubmit(overrideCode) {
-    const input = (overrideCode || empJoinInput).replace(/\s/g, '');
-    if (!input) {
-      showToast('Please enter a 6-digit join code');
-      return;
+  function empEmailSubmit() {
+    if (!activePulse) return;
+    const typed = (emailInput || '').trim().toLowerCase();
+    const invited = activePulse.invitedEmployees || [];
+    const match = invited.find((inv) => inv.email.toLowerCase() === typed);
+    if (match) {
+      setVerifiedEmail(match.email);
+      setEmailError(null);
+      setEmpScreen('instructions');
+    } else {
+      setEmailError("That email isn't on the invite list for this pulse.");
     }
-
-    const match = pulses.find(
-      (p) => p.joinCode && p.joinCode.replace(/\s/g, '') === input
-    );
-
-    if (!match) {
-      showToast("No pulse survey found matching that code.");
-      return;
-    }
-
-    setActivePulseId(match.id);
-
-    if (completedPulseIds.includes(match.id)) {
-      setEmpScreen('already');
-      return;
-    }
-
-    if (match.status === 'completed') {
-      showToast('This survey has already been completed and closed.');
-      return;
-    }
-
-    setEmpScreen('welcome');
   }
 
   function empStart() {
@@ -417,10 +581,16 @@ export function PulseProvider({ children }) {
       answers: { ...empAnswers },
       submittedAt: new Date().toISOString(),
       isReal: true,
+      respondentEmail: activePulse.privacy === 'identified' ? verifiedEmail : undefined,
     };
 
     setPulses((prev) =>
-      prev.map((p) => (p.id === activePulse.id ? { ...p, responses: [...p.responses, submission] } : p))
+      prev.map((p) =>
+        p.id === activePulse.id ? { ...p, responses: [...p.responses, submission] } : p
+      )
+    );
+    submitResponseToFirebase(activePulse.id, submission).catch((err) =>
+      console.warn('Firebase response submit fallback:', err)
     );
     setCompletedPulseIds((prev) => [...prev, activePulse.id]);
     setEmpScreen('completion');
@@ -469,6 +639,7 @@ export function PulseProvider({ children }) {
   return (
     <PulseContext.Provider
       value={{
+        isFirebaseConfigured,
         pulses,
         activePulse,
         activePulseId,
@@ -481,6 +652,7 @@ export function PulseProvider({ children }) {
         setHostScreen,
         draft,
         updateDraft,
+        toggleInvitee,
         commentFilter,
         setCommentFilter,
         showToast,
@@ -504,14 +676,19 @@ export function PulseProvider({ children }) {
         deployPulse,
         nextLiveQuestion,
         endLivePulse,
+        simulateLiveJoins,
+        simulatePrivateResponses,
         // Employee state & actions
         empScreen,
         setEmpScreen,
-        empJoinInput,
-        setEmpJoinInput,
+        emailInput,
+        setEmailInput,
+        emailError,
+        setEmailError,
+        verifiedEmail,
+        empEmailSubmit,
         empQIndex,
         empAnswers,
-        empJoinSubmit,
         empStart,
         empAnswer,
         empAnswerMulti,

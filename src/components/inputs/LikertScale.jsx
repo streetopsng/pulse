@@ -1,10 +1,12 @@
 import { LIKERT_OPTIONS } from '../../constants/questionTypes';
+import { LIKERT_EMOJI } from '../../constants/directory';
 
 export function LikertScale({ value, onChange }) {
   return (
     <div className="flex flex-col gap-2.5 w-full">
       {LIKERT_OPTIONS.map((opt, i) => {
         const isPicked = value === i;
+        const emoji = LIKERT_EMOJI[i] || '';
         return (
           <button
             key={opt}
@@ -27,6 +29,7 @@ export function LikertScale({ value, onChange }) {
                 }`}
               />
             </span>
+            <span className="text-lg leading-none shrink-0">{emoji}</span>
             <span className="text-ink">{opt}</span>
           </button>
         );

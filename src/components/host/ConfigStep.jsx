@@ -1,15 +1,13 @@
 import { Stepper } from '../common/Stepper';
 import { Button } from '../common/Button';
+import { DIRECTORY } from '../../constants/directory';
 import { usePulse } from '../../context/PulseContext';
 
 export function ConfigStep() {
-  const { draft, updateDraft, setHostScreen } = usePulse();
+  const { draft, updateDraft, toggleInvitee, setHostScreen } = usePulse();
 
-  const scopes = [
-    { id: 'team', n: 8, l: 'Entire team' },
-    { id: 'department', n: 20, l: 'Department' },
-    { id: 'selected', n: 5, l: 'Selected employees' },
-  ];
+  const invitedEmployees = draft.invitedEmployees || [];
+  const invitedEmails = new Set(invitedEmployees.map((p) => p.email));
 
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-8 py-8 sm:py-12">
@@ -43,7 +41,7 @@ export function ConfigStep() {
               Live
             </div>
             <p className="text-xs text-ink-soft leading-relaxed">
-              Run the pulse together and see aggregate responses as they arrive.
+              Employees get an email invite; you watch aggregate responses arrive in real time.
             </p>
           </button>
 
@@ -63,42 +61,63 @@ export function ConfigStep() {
               Private
             </div>
             <p className="text-xs text-ink-soft leading-relaxed">
-              Send the pulse to employees to complete individually, at their own pace.
+              Employees get an email invite and complete it individually, at their own pace — no live session.
             </p>
           </button>
         </div>
       </div>
 
-      {/* Participants Scope */}
+      {/* Participants Directory Picker */}
       <div className="mb-8">
         <div className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-wider text-ink mb-3">
           <span className="w-2 h-2 rounded-xs bg-accent border-[1.5px] border-ink" />
-          <span>Participants</span>
+          <span>Who should get the invite?</span>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          {scopes.map((s) => {
-            const isSelected = draft.scope === s.id;
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+          {DIRECTORY.map((p) => {
+            const isSelected = invitedEmails.has(p.email);
+            const initials = p.name
+              .split(' ')
+              .map((x) => x[0])
+              .join('');
+
             return (
               <button
-                key={s.id}
+                key={p.email}
                 type="button"
-                onClick={() => updateDraft({ scope: s.id, participantCount: s.n })}
-                className={`p-4 rounded-2xl border-2 border-ink text-center transition-all duration-150 cursor-pointer ${
+                onClick={() => toggleInvitee(p.email)}
+                className={`flex items-center gap-3.5 p-3.5 sm:p-4 rounded-2xl border-2 border-ink text-left transition-all duration-150 cursor-pointer ${
                   isSelected
                     ? 'bg-accent-soft translate-x-0.5 translate-y-0.5 shadow-[1px_1px_0px_#1B1224]'
                     : 'bg-surface shadow-hard-sm hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-hard'
                 }`}
               >
-                <div className="font-display font-bold text-2xl text-ink">
-                  {s.n}
+                <div className="w-9 h-9 rounded-full border-2 border-ink bg-accent-tint flex items-center justify-center font-extrabold text-xs text-ink shrink-0">
+                  {initials}
                 </div>
-                <div className="text-xs font-bold text-ink-soft mt-1">
-                  {s.l}
+                <div className="min-w-0 flex-1">
+                  <div className="font-bold text-sm text-ink truncate">{p.name}</div>
+                  <div className="text-[11px] font-semibold text-ink-faint truncate">
+                    {p.email}
+                  </div>
+                </div>
+                <div className="w-5 h-5 rounded-md border-2 border-ink bg-surface flex items-center justify-center text-xs font-black text-ink shrink-0">
+                  {isSelected && (
+                    <span className="w-full h-full bg-accent flex items-center justify-center">
+                      ✓
+                    </span>
+                  )}
                 </div>
               </button>
             );
           })}
+        </div>
+
+        <div className="inline-flex items-center gap-2 bg-surface border-2 border-ink rounded-full px-4 py-2 text-xs font-extrabold text-ink shadow-hard-sm">
+          <span>
+            {invitedEmployees.length} employee{invitedEmployees.length === 1 ? '' : 's'} will get an email invite
+          </span>
         </div>
       </div>
 
@@ -154,7 +173,11 @@ export function ConfigStep() {
 
       {/* Bottom Nav */}
       <div className="flex items-center gap-3">
-        <Button variant="primary" onClick={() => setHostScreen('deploy')}>
+        <Button
+          variant="primary"
+          disabled={invitedEmployees.length === 0}
+          onClick={() => setHostScreen('deploy')}
+        >
           Continue to Deploy
         </Button>
         <Button variant="ghost" onClick={() => setHostScreen('builder')}>

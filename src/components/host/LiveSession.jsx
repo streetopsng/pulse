@@ -1,7 +1,6 @@
-import { Link } from 'react-router-dom';
 import { Button } from '../common/Button';
 import { Card } from '../common/Card';
-import { PeopleIcon, ClipboardIcon, BoltIcon, KeyIcon } from '../common/Icons';
+import { PeopleIcon, ClipboardIcon, BoltIcon, CalendarIcon } from '../common/Icons';
 import { computeSnapshot } from '../../utils/analytics';
 import { usePulse } from '../../context/PulseContext';
 
@@ -10,8 +9,8 @@ export function LiveSession() {
     activePulse,
     nextLiveQuestion,
     endLivePulse,
+    simulateLiveJoins,
     setHostScreen,
-    showToast,
   } = usePulse();
 
   if (!activePulse) {
@@ -28,22 +27,11 @@ export function LiveSession() {
   }
 
   const p = activePulse;
+  const totalInvited = p.invitedEmployees?.length || 0;
   const qq = p.questions[p.liveQIndex] || p.questions[0];
   const progressPct = ((p.liveQIndex + 1) / p.questions.length) * 100;
   const snap = computeSnapshot(p);
   const pq = snap.perQuestion[p.liveQIndex];
-
-  function handleCopyLink() {
-    const baseUrl = window.location.href.split('#')[0];
-    const cleanBase = baseUrl.endsWith('/') ? baseUrl : baseUrl + '/';
-    const url = `${cleanBase}#/join/${p.joinCode.replace(/\s/g, '')}`;
-    if (navigator.clipboard?.writeText) {
-      navigator.clipboard.writeText(url);
-      showToast('Participant link copied to clipboard!');
-    } else {
-      showToast(url);
-    }
-  }
 
   function renderLiveAggregates() {
     if (!pq || p.responses.length === 0) {
@@ -53,7 +41,7 @@ export function LiveSession() {
             Waiting for live participant responses…
           </p>
           <p className="text-xs text-ink-faint">
-            Share the join code or link below. Responses update automatically.
+            Employees have been invited by email. You can simulate incoming responses below.
           </p>
         </div>
       );
@@ -152,18 +140,8 @@ export function LiveSession() {
             </span>
           </div>
 
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="sm" onClick={handleCopyLink}>
-              📋 Copy Join Link
-            </Button>
-            <Link
-              to={`/join/${p.joinCode.replace(/\s/g, '')}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-xs font-black text-ink underline underline-offset-4 decoration-accent hover:text-accent-dark"
-            >
-              Open in new tab ↗
-            </Link>
+          <div className="text-xs font-bold text-ink-soft">
+            Invited: <b className="text-ink">{totalInvited} employees</b>
           </div>
         </div>
 
@@ -176,7 +154,7 @@ export function LiveSession() {
             <div className="font-display font-bold text-2xl text-accent-dark">
               {p.responses.length}
               <span className="text-xs font-normal text-ink-faint ml-1">
-                / {p.participantCount}
+                / {totalInvited}
               </span>
             </div>
           </div>
@@ -204,10 +182,10 @@ export function LiveSession() {
 
           <div className="bg-surface border-2 border-ink rounded-2xl p-3.5 shadow-hard-sm">
             <div className="text-[10.5px] font-black uppercase tracking-wider text-ink-soft flex items-center gap-1 mb-1">
-              <KeyIcon /> Join code
+              <CalendarIcon /> Sent
             </div>
             <div className="font-display font-bold text-lg sm:text-xl text-ink">
-              {p.joinCode}
+              {p.createdDate}
             </div>
           </div>
         </div>
@@ -233,6 +211,9 @@ export function LiveSession() {
 
         {/* Controls */}
         <div className="flex flex-wrap items-center justify-center gap-3">
+          <Button variant="mint" onClick={simulateLiveJoins}>
+            ⚡ Simulate Responses
+          </Button>
           <Button variant="ghost" onClick={endLivePulse}>
             End Pulse &amp; View Snapshot
           </Button>
@@ -248,6 +229,9 @@ export function LiveSession() {
 
       {/* Nav */}
       <div className="text-center">
+        <p className="text-xs text-ink-faint font-semibold mb-2">
+          Invited by email · {totalInvited} people
+        </p>
         <button
           type="button"
           onClick={() => setHostScreen('home')}

@@ -1,5 +1,6 @@
 import { Button } from '../common/Button';
 import { Card } from '../common/Card';
+import { PulseOrb } from '../common/Icons';
 import { usePulse } from '../../context/PulseContext';
 
 export function WelcomeView() {
@@ -9,6 +10,10 @@ export function WelcomeView() {
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
       {/* Hero Section */}
       <div className="text-center max-w-xl mx-auto mb-10">
+        <div className="w-36 h-36 mx-auto mb-6">
+          <PulseOrb animate={true} />
+        </div>
+
         <div className="inline-flex items-center gap-1.5 font-extrabold text-[11px] tracking-wider uppercase text-accent-dark bg-accent-soft border-2 border-ink px-3 py-1 rounded-full mb-3 shadow-2xs">
           GummyGum · Team Engagement
         </div>

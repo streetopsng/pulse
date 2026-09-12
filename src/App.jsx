@@ -1,5 +1,5 @@
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { PulseProvider } from './context/PulseContext';
+import { PulseProvider, usePulse } from './context/PulseContext';
 import { TopBar } from './components/layout/TopBar';
 import { HostView } from './components/host/HostView';
 import { EmployeeView } from './components/employee/EmployeeView';
@@ -7,13 +7,15 @@ import { PreviewModal } from './components/preview/PreviewModal';
 import { Toast } from './components/common/Toast';
 import { BgDeco } from './components/common/BgDeco';
 
-function HostLayout() {
+function MainLayout() {
+  const { topView } = usePulse();
+
   return (
     <div className="relative min-h-screen flex flex-col z-10">
       <BgDeco />
       <TopBar />
       <main className="flex-1">
-        <HostView />
+        {topView === 'host' ? <HostView /> : <EmployeeView />}
       </main>
       <PreviewModal />
       <Toast />
@@ -21,7 +23,7 @@ function HostLayout() {
   );
 }
 
-function EmployeeLayout() {
+function EmployeeStandaloneLayout() {
   return (
     <div className="relative min-h-screen flex flex-col z-10">
       <BgDeco />
@@ -38,12 +40,11 @@ export default function App() {
     <PulseProvider>
       <HashRouter>
         <Routes>
-          {/* Host Administration & Analytics */}
-          <Route path="/" element={<HostLayout />} />
+          {/* Main Interactive Prototype with TopBar switcher */}
+          <Route path="/" element={<MainLayout />} />
 
-          {/* Participant Survey Experience */}
-          <Route path="/join" element={<EmployeeLayout />} />
-          <Route path="/join/:code" element={<EmployeeLayout />} />
+          {/* Standalone Participant Survey Route */}
+          <Route path="/join" element={<EmployeeStandaloneLayout />} />
 
           {/* Fallback */}
           <Route path="*" element={<Navigate to="/" replace />} />

@@ -6,8 +6,9 @@ import { usePulse } from '../../context/PulseContext';
 export function PulseCard({ pulse }) {
   const { openPulseCard, openSnapshot, deletePulse } = usePulse();
   const snap = computeSnapshot(pulse);
-  const rate = pulse.participantCount
-    ? Math.round((pulse.responses.length / pulse.participantCount) * 100)
+  const inviteCount = pulse.invitedEmployees?.length ?? pulse.participantCount ?? 0;
+  const rate = inviteCount
+    ? Math.round((pulse.responses.length / inviteCount) * 100)
     : 0;
   const tmpl = TEMPLATES[pulse.template] || TEMPLATES.custom;
 
@@ -93,7 +94,7 @@ export function PulseCard({ pulse }) {
                 {pulse.responses.length}
               </span>
               <span className="text-xs font-semibold text-ink-faint">
-                / {pulse.participantCount}
+                / {inviteCount}
               </span>
             </div>
             <span className="text-[10.5px] font-extrabold text-ink-faint uppercase tracking-wider">

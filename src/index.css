@@ -62,3 +62,30 @@ h1, h2, h3, h4, h5, h6 {
 .hazard-stripes {
   background-image: repeating-linear-gradient(115deg, #7A4FE0 0 6px, transparent 6px 11px);
 }
+
+/* Instructions bullet list */
+.instr-list {
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 18px 0 20px;
+}
+
+.instr-item {
+  display: flex;
+  gap: 10px;
+  font-size: 12.8px;
+  color: var(--color-ink-soft, #5B4F66);
+  line-height: 1.5;
+}
+
+.instr-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--color-accent, #7A4FE0);
+  border: 1.5px solid var(--color-ink, #1B1224);
+  flex-shrink: 0;
+  margin-top: 5px;
+}

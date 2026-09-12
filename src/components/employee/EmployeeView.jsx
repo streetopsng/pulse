@@ -1,8 +1,8 @@
 import { SurveyContainer } from '../layout/SurveyContainer';
 import { EntryScreen } from './screens/EntryScreen';
-import { JoinScreen } from './screens/JoinScreen';
 import { InviteScreen } from './screens/InviteScreen';
-import { WelcomeScreen } from './screens/WelcomeScreen';
+import { VerifyEmailScreen } from './screens/VerifyEmailScreen';
+import { InstructionsScreen } from './screens/InstructionsScreen';
 import { QuestionScreen } from './screens/QuestionScreen';
 import { CompletionScreen } from './screens/CompletionScreen';
 import { AlreadyScreen } from './screens/AlreadyScreen';
@@ -13,15 +13,16 @@ export function EmployeeView() {
 
   let badgeText = 'GUMMYGUM · PULSE';
   if (activePulse) {
-    badgeText = activePulse.delivery === 'live' ? 'LIVE PULSE · GUMMYGUM' : 'PRIVATE PULSE · GUMMYGUM';
+    badgeText =
+      activePulse.delivery === 'live' ? 'LIVE PULSE · GUMMYGUM' : 'PRIVATE PULSE · GUMMYGUM';
   }
 
   return (
     <SurveyContainer badgeText={badgeText}>
       {empScreen === 'entry' && <EntryScreen />}
-      {empScreen === 'join' && <JoinScreen />}
       {empScreen === 'invite' && <InviteScreen />}
-      {empScreen === 'welcome' && <WelcomeScreen />}
+      {empScreen === 'verify-email' && <VerifyEmailScreen />}
+      {(empScreen === 'instructions' || empScreen === 'welcome') && <InstructionsScreen />}
       {empScreen === 'question' && <QuestionScreen />}
       {empScreen === 'completion' && <CompletionScreen />}
       {empScreen === 'already' && <AlreadyScreen />}

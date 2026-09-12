@@ -7,8 +7,8 @@ export function PrivateStatus() {
     activePulse,
     closePulse,
     openSnapshot,
+    simulatePrivateResponses,
     setHostScreen,
-    showToast,
   } = usePulse();
 
   if (!activePulse) {
@@ -25,21 +25,10 @@ export function PrivateStatus() {
   }
 
   const p = activePulse;
-  const pct = p.participantCount
-    ? Math.round((p.responses.length / p.participantCount) * 100)
+  const totalInvited = p.invitedEmployees?.length || 0;
+  const pct = totalInvited
+    ? Math.round((p.responses.length / totalInvited) * 100)
     : 0;
-
-  function handleCopyLink() {
-    const baseUrl = window.location.href.split('#')[0];
-    const cleanBase = baseUrl.endsWith('/') ? baseUrl : baseUrl + '/';
-    const url = `${cleanBase}#/join/${p.joinCode.replace(/\s/g, '')}`;
-    if (navigator.clipboard?.writeText) {
-      navigator.clipboard.writeText(url);
-      showToast('Participant link copied to clipboard!');
-    } else {
-      showToast(url);
-    }
-  }
 
   function handleCloseAndSnapshot() {
     closePulse(p.id);
@@ -51,20 +40,20 @@ export function PrivateStatus() {
       {/* Hero */}
       <div className="text-center mb-8">
         <div className="inline-flex items-center gap-1.5 font-extrabold text-xs tracking-wider uppercase text-accent-dark bg-accent-soft border-2 border-ink px-3.5 py-1.5 rounded-full mb-3">
-          Private Pulse · Collecting Responses
+          Private Pulse · Sent
         </div>
         <h2 className="font-display text-2xl sm:text-3xl font-bold text-ink">
           {p.name}
         </h2>
         <p className="text-xs sm:text-sm text-ink-soft mt-1.5 font-bold">
-          Target: {p.participantCount} employee responses
+          {totalInvited} employees invited by email
         </p>
       </div>
 
       {/* Progress Card */}
       <Card className="p-8 sm:p-10 text-center mb-6">
         <div className="font-display font-bold text-4xl sm:text-5xl text-ink mb-1">
-          {p.responses.length} / {p.participantCount}
+          {p.responses.length} / {totalInvited}
         </div>
         <p className="text-xs sm:text-sm font-bold text-ink-faint mb-6">
           responses recorded ({pct}%)
@@ -78,32 +67,19 @@ export function PrivateStatus() {
           />
         </div>
 
-        {/* Share Link Banner */}
-        <div className="bg-accent-soft border-2 border-ink rounded-2xl p-4 mb-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-left">
-          <div>
-            <div className="text-xs font-black text-ink uppercase tracking-wider">
-              Participant Join Code: <span className="text-accent-dark font-mono text-sm">{p.joinCode}</span>
-            </div>
-            <div className="text-[11px] text-ink-soft font-semibold mt-0.5">
-              Share link with your team to collect their honest feedback
-            </div>
-          </div>
-          <Button variant="ghost" size="sm" onClick={handleCopyLink}>
-            📋 Copy Link
-          </Button>
-        </div>
-
+        {/* Actions */}
         <div className="flex flex-wrap items-center justify-center gap-3">
+          <Button variant="mint" onClick={simulatePrivateResponses}>
+            ⚡ Simulate Responses
+          </Button>
           <Button
             variant="primary"
+            disabled={p.responses.length === 0}
             onClick={() => openSnapshot(p.id)}
           >
-            View Real-time Snapshot
+            View Snapshot
           </Button>
-          <Button
-            variant="ghost"
-            onClick={handleCloseAndSnapshot}
-          >
+          <Button variant="ghost" onClick={handleCloseAndSnapshot}>
             End Survey &amp; Finalize
           </Button>
         </div>

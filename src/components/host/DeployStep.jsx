@@ -4,6 +4,7 @@ import { usePulse } from '../../context/PulseContext';
 
 export function DeployStep() {
   const { draft, deployPulse, openPreview, setHostScreen } = usePulse();
+  const inviteCount = draft.invitedEmployees?.length || 0;
 
   return (
     <div className="max-w-2xl mx-auto px-4 sm:px-8 py-8 sm:py-12">
@@ -31,9 +32,9 @@ export function DeployStep() {
             </div>
 
             <div className="flex items-center justify-between py-3.5 border-b-2 border-dashed border-line-soft">
-              <span className="text-sm font-bold text-ink-soft">Participants</span>
+              <span className="text-sm font-bold text-ink-soft">Invited</span>
               <span className="text-sm font-extrabold text-ink">
-                {draft.participantCount} people
+                {inviteCount} people, by email
               </span>
             </div>
 
@@ -47,7 +48,9 @@ export function DeployStep() {
             <div className="flex items-center justify-between py-3.5">
               <span className="text-sm font-bold text-ink-soft">Delivery</span>
               <span className="text-sm font-extrabold text-ink">
-                {draft.delivery === 'live' ? 'Live session' : 'Private, self-paced'}
+                {draft.delivery === 'live'
+                  ? 'Live (host monitors in real time)'
+                  : 'Private, self-paced'}
               </span>
             </div>
           </div>

@@ -29,8 +29,9 @@ export function SnapshotView() {
 
   const p = snapshotPulse;
   const snap = computeSnapshot(p);
-  const rate = p.participantCount
-    ? Math.round((p.responses.length / p.participantCount) * 100)
+  const inviteCount = p.invitedEmployees?.length ?? p.participantCount ?? 0;
+  const rate = inviteCount
+    ? Math.round((p.responses.length / inviteCount) * 100)
     : 0;
 
   const filteredComments =

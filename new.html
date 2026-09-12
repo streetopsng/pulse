@@ -366,6 +366,9 @@ code{font-family:var(--font-mono);}
 .privacy-note{display:flex; align-items:center; gap:8px; font-size:11.8px; font-weight:700; color:var(--ink); background:var(--gray-soft); padding:10px 14px; border-radius:99px; margin-top:14px; border:1.5px solid var(--ink);}
 .emp-check-anim{width:68px;height:68px;border-radius:50%; background:var(--accent); border:var(--bw-lg) solid var(--ink); display:flex; align-items:center; justify-content:center; margin:0 auto 22px; font-size:28px; color:var(--ink); animation:popIn 500ms var(--ease-spring);}
 @keyframes popIn{from{transform:scale(0);} to{transform:scale(1);}}
+.instr-list{text-align:left; display:flex; flex-direction:column; gap:12px; margin:18px 0 20px;}
+.instr-item{display:flex; gap:10px; font-size:12.8px; color:var(--ink-soft); line-height:1.5;}
+.instr-dot{width:7px;height:7px;border-radius:50%; background:var(--accent); border:1.5px solid var(--ink); flex-shrink:0; margin-top:5px;}
 
 /* preview modal */
 .modal-overlay{position:fixed; inset:0; background:rgba(20,17,16,.55); backdrop-filter:blur(2px); z-index:40; display:flex; align-items:center; justify-content:center; opacity:0; pointer-events:none; transition:opacity var(--dur-2);}
@@ -528,8 +531,14 @@ function q(text,type,topic,options){
 }
 function cloneQuestions(list){ return list.map(x=>({...x, options:x.options? [...x.options]:undefined})); }
 
-/* ---------- sample participants (used for the builder's people picker) ---------- */
+/* ---------- named employee directory + email helper ---------- */
 const SAMPLE_PEOPLE = ['Alex Kim','Priya Nair','Jordan Lee','Sam Ortiz','Maya Chen','Diego Ruiz','Faith Adeyemi','Noah Becker','Lena Wolf','Theo Marsh'];
+function emailFor(name){ return name.toLowerCase().replace(/[^a-z\s]/g,'').replace(/\s+/g,'.') + '@gummygum.com'; }
+const DIRECTORY = SAMPLE_PEOPLE.map(name=>({name, email:emailFor(name)}));
+
+/* ---------- emoji scales — sentiment shown alongside the rating ---------- */
+const RATING_EMOJI = ['😣','😕','😐','🙂','😄'];
+const LIKERT_EMOJI = ['😠','🙁','😐','🙂','😍'];
 
 /* ---------- fake-respondent generation, used only to (a) seed pulse
    history so it isn't empty on first load, and (b) let a Host
@@ -619,9 +628,8 @@ function blankDraft(){
     name:'', description:'', template:null,
     questions:[], openQ:null,
     delivery:'private',
-    scope:'team', participantCount:20,
+    invitedEmployees: DIRECTORY.slice(0,4).map(p=>({...p})),
     privacy:'anonymous',
-    joinCode: String(Math.floor(100000+Math.random()*900000)).replace(/(\d{3})(\d{3})/,'$1 $2'),
   };
 }
 const state = {
@@ -635,7 +643,8 @@ const state = {
     commentFilter:'all',
   },
   employee:{
-    screen:'entry', joinInput:'',
+    screen:'entry',
+    emailInput:'', emailError:null, verifiedEmail:null,
     qIndex:0, answers:{},
     completedPulseIds: [],
   },
@@ -655,7 +664,7 @@ function setTopView(v){
     if(ap && state.employee.completedPulseIds.includes(ap.id)){
       state.employee.screen = 'already';
     } else if(ap){
-      state.employee.screen = ap.delivery==='live' ? 'join' : 'invite';
+      state.employee.screen = 'invite';
     }
   }
   render();
@@ -689,14 +698,15 @@ function renderRating(qq, picked, onPick){
   const n = qq.scaleMax||5;
   let html = `<div class="rating-row">`;
   for(let i=1;i<=n;i++){
-    html += `<button class="rating-opt ${picked===i?'picked':''}" onclick="${onPick}(${i})">${i}</button>`;
+    const emoji = RATING_EMOJI[Math.min(i-1, RATING_EMOJI.length-1)];
+    html += `<button class="rating-opt ${picked===i?'picked':''}" onclick="${onPick}(${i})"><span style="font-size:22px; line-height:1;">${emoji}</span></button>`;
   }
-  html += `</div><div class="rating-scale-labels"><span>Strongly disagree</span><span>Strongly agree</span></div>`;
+  html += `</div><div class="rating-scale-labels"><span>😣 Strongly disagree</span><span>😄 Strongly agree</span></div>`;
   return html;
 }
 function renderLikert(qq, picked, onPick){
   return `<div class="likert-col">${LIKERT_OPTIONS.map((o,i)=>`
-    <button class="likert-opt ${picked===i?'picked':''}" onclick="${onPick}(${i})"><span class="likert-dot"></span>${o}</button>`).join('')}</div>`;
+    <button class="likert-opt ${picked===i?'picked':''}" onclick="${onPick}(${i})"><span class="likert-dot"></span><span style="margin-right:8px;">${LIKERT_EMOJI[i]}</span>${o}</button>`).join('')}</div>`;
 }
 function renderChoice(qq, picked, onPick, multi){
   return `<div class="choice-col">${qq.options.map((o,i)=>{
@@ -795,7 +805,8 @@ HOST_RENDERERS['home'] = function(){
 };
 function pulseCardHTML(p){
   const snap = computeSnapshot(p);
-  const rate = p.participantCount? Math.round(p.responses.length/p.participantCount*100) : 0;
+  const n = p.invitedEmployees.length;
+  const rate = n? Math.round(p.responses.length/n*100) : 0;
   const tmpl = TEMPLATES[p.template] || TEMPLATES.custom;
   return `<div class="pulse-card" onclick="openPulseCard('${p.id}')">
     <div class="pulse-card-top">
@@ -807,7 +818,7 @@ function pulseCardHTML(p){
       ${statusBadgeHTML(p.status)}
     </div>
     <div class="pulse-card-bottom">
-      <div class="pulse-card-stat"><span class="n">${p.responses.length}<span style="color:var(--ink-faint); font-weight:600;"> / ${p.participantCount}</span></span><span class="l">responses (${rate}%)</span></div>
+      <div class="pulse-card-stat"><span class="n">${p.responses.length}<span style="color:var(--ink-faint); font-weight:600;"> / ${n}</span></span><span class="l">responses (${rate}%)</span></div>
       ${snap.overall!=null? `<div class="pulse-card-stat"><span class="n accent">${snap.overall}</span><span class="l">/ 5 overall</span></div>` : `<div class="pulse-card-stat"><span class="n" style="color:var(--ink-faint);">—</span><span class="l">no responses yet</span></div>`}
       <button class="btn-text" style="margin-left:auto;" onclick="event.stopPropagation(); openSnapshot('${p.id}')">View snapshot →</button>
     </div>
@@ -977,7 +988,7 @@ window.moveQuestion=moveQuestion; window.duplicateQuestion=duplicateQuestion; wi
 /* ---------- CONFIG ---------- */
 HOST_RENDERERS['config'] = function(){
   const d = state.host.draft;
-  const scopes = [{id:'team',n:8,l:'Entire team'},{id:'department',n:20,l:'Department'},{id:'selected',n:5,l:'Selected employees'}];
+  const invitedEmails = new Set(d.invitedEmployees.map(p=>p.email));
   return `<div class="pane pane-narrow fade-in">
     ${hostStepper(2)}
     <h2 style="font-size:19px; margin-bottom:16px;">Configure delivery</h2>
@@ -986,21 +997,24 @@ HOST_RENDERERS['config'] = function(){
       <button class="delivery-card ${d.delivery==='live'?'selected':''}" onclick="setDelivery('live')">
         <div class="delivery-ico" style="background:var(--accent-soft);">📡</div>
         <div class="delivery-t">Live</div>
-        <div class="delivery-d">Run the pulse together and see aggregate responses as they arrive.</div>
+        <div class="delivery-d">Employees get an email invite; you watch aggregate responses arrive in real time.</div>
       </button>
       <button class="delivery-card ${d.delivery==='private'?'selected':''}" onclick="setDelivery('private')">
         <div class="delivery-ico" style="background:var(--mint-soft);">✉️</div>
         <div class="delivery-t">Private</div>
-        <div class="delivery-d">Send the pulse to employees to complete individually, at their own pace.</div>
+        <div class="delivery-d">Employees get an email invite and complete it individually, at their own pace — no live session.</div>
       </button>
     </div>
 
-    <div class="section-title">Participants</div>
-    <div class="scope-grid">
-      ${scopes.map(s=>`<button class="scope-card ${d.scope===s.id?'selected':''}" onclick="setScope('${s.id}',${s.n})">
-        <div class="scope-n">${s.n}</div><div class="scope-l">${s.l}</div>
+    <div class="section-title">Who should get the invite?</div>
+    <div class="people-grid">
+      ${DIRECTORY.map(p=>`<button class="person-card ${invitedEmails.has(p.email)?'selected':''}" onclick="toggleInvitee('${p.email}')">
+        <div class="person-avatar" style="background:var(--accent-tint);">${p.name.split(' ').map(x=>x[0]).join('')}</div>
+        <div><div class="person-name">${p.name}</div><div style="font-size:11px; color:var(--ink-faint); font-weight:600;">${p.email}</div></div>
+        <div class="person-check">${invitedEmails.has(p.email)?'✓':''}</div>
       </button>`).join('')}
     </div>
+    <div class="count-chip">${d.invitedEmployees.length} employee${d.invitedEmployees.length===1?'':'s'} will get an email invite</div>
 
     <div class="section-title">Privacy</div>
     <div class="privacy-cards">
@@ -1017,15 +1031,22 @@ HOST_RENDERERS['config'] = function(){
     </div>
 
     <div style="margin-top:32px; display:flex; gap:12px;">
-      <button class="btn btn-primary" onclick="state.host.screen='deploy'; render();">Continue to Deploy</button>
+      <button class="btn btn-primary" ${d.invitedEmployees.length? '' : 'disabled'} onclick="state.host.screen='deploy'; render();">Continue to Deploy</button>
       <button class="btn btn-ghost" onclick="state.host.screen='builder'; render();">Back</button>
     </div>
   </div>`;
 };
 function setDelivery(v){ state.host.draft.delivery=v; render(); }
-function setScope(id,n){ state.host.draft.scope=id; state.host.draft.participantCount=n; render(); }
+function toggleInvitee(email){
+  const d = state.host.draft;
+  const idx = d.invitedEmployees.findIndex(p=>p.email===email);
+  if(idx>-1) d.invitedEmployees.splice(idx,1);
+  else d.invitedEmployees.push({...DIRECTORY.find(p=>p.email===email)});
+  render();
+}
+window.toggleInvitee = toggleInvitee;
 function setPrivacy(v){ state.host.draft.privacy=v; render(); }
-window.setDelivery=setDelivery; window.setScope=setScope; window.setPrivacy=setPrivacy;
+window.setDelivery=setDelivery; window.setPrivacy=setPrivacy;
 
 /* ---------- DEPLOY ---------- */
 HOST_RENDERERS['deploy'] = function(){
@@ -1036,9 +1057,9 @@ HOST_RENDERERS['deploy'] = function(){
       <div class="eyebrow">Ready to launch</div>
       <h2 style="font-size:24px; margin-bottom:20px;">${d.name}</h2>
       <div class="summary-row"><span class="k">Questions</span><span class="v">${d.questions.length}</span></div>
-      <div class="summary-row"><span class="k">Participants</span><span class="v">${d.participantCount} people</span></div>
+      <div class="summary-row"><span class="k">Invited</span><span class="v">${d.invitedEmployees.length} people, by email</span></div>
       <div class="summary-row"><span class="k">Privacy</span><span class="v">${d.privacy==='anonymous'?'Anonymous':'Identified'}</span></div>
-      <div class="summary-row"><span class="k">Delivery</span><span class="v">${d.delivery==='live'?'Live session':'Private, self-paced'}</span></div>
+      <div class="summary-row"><span class="k">Delivery</span><span class="v">${d.delivery==='live'?'Live (host monitors in real time)':'Private, self-paced'}</span></div>
     </div>
     <div style="margin-top:28px; display:flex; gap:12px;">
       <button class="btn btn-primary" onclick="deployPulse()">${d.delivery==='live'? 'Start Live Pulse':'Send Pulse'}</button>
@@ -1052,8 +1073,8 @@ function deployPulse(){
   const id = 'p'+Math.random().toString(36).slice(2,9);
   const pulse = {
     id, name:d.name, description:d.description, template:d.template,
-    questions:cloneQuestions(d.questions), delivery:d.delivery, scope:d.scope,
-    participantCount:d.participantCount, privacy:d.privacy, joinCode:d.joinCode,
+    questions:cloneQuestions(d.questions), delivery:d.delivery,
+    invitedEmployees:d.invitedEmployees.map(p=>({...p})), privacy:d.privacy,
     status: d.delivery==='live' ? 'live' : 'collecting',
     createdDate:'Today', liveQIndex:0,
     responses:[],
@@ -1061,7 +1082,7 @@ function deployPulse(){
   state.host.pulses.unshift(pulse);
   state.host.activePulseId = id;
   state.host.screen = d.delivery==='live' ? 'live-session' : 'private-status';
-  showToast(d.delivery==='live' ? 'Live pulse started' : 'Pulse sent to '+d.participantCount+' people');
+  showToast(d.delivery==='live' ? 'Live pulse started — invites sent by email' : 'Pulse sent to '+d.invitedEmployees.length+' people by email');
   render();
 }
 window.deployPulse = deployPulse;
@@ -1086,10 +1107,10 @@ HOST_RENDERERS['live-session'] = function(){
       </div>
 
       <div class="stat-row-4">
-        <div class="stat-card"><div class="lbl">${icoPeople()} Responses</div><div class="val accent">${p.responses.length}<span style="font-size:14px; color:var(--ink-faint);"> / ${p.participantCount}</span></div></div>
+        <div class="stat-card"><div class="lbl">${icoPeople()} Responses</div><div class="val accent">${p.responses.length}<span style="font-size:14px; color:var(--ink-faint);"> / ${p.invitedEmployees.length}</span></div></div>
         <div class="stat-card"><div class="lbl">${icoClipboard()} Question</div><div class="val">${p.liveQIndex+1}<span style="font-size:14px; color:var(--ink-faint);"> / ${p.questions.length}</span></div></div>
         <div class="stat-card"><div class="lbl">${icoBolt()} Status</div><div class="val accent">Live</div></div>
-        <div class="stat-card"><div class="lbl">${icoKey()} Join code</div><div class="val" style="font-size:19px;">${p.joinCode}</div></div>
+        <div class="stat-card"><div class="lbl">${icoCalendar()} Sent</div><div class="val" style="font-size:19px;">${p.createdDate}</div></div>
       </div>
       <div class="session-progress-track"><div class="session-progress-fill" style="width:${progressPct}%;"></div></div>
 
@@ -1105,8 +1126,8 @@ HOST_RENDERERS['live-session'] = function(){
         <button class="btn btn-primary" ${p.liveQIndex>=p.questions.length-1?'disabled':''} onclick="nextLiveQuestion()">Next Question →</button>
       </div>
     </div>
-    <div class="join-link" style="display:block; text-align:center; margin:0 auto; width:fit-content;">gummygum.app/join/${p.joinCode.replace(' ','')}</div>
-    <div style="text-align:center; margin-top:14px;"><button class="btn-text" onclick="state.host.screen='home'; render();">← Back to your pulses</button></div>
+    <p style="text-align:center; font-size:12px; color:var(--ink-faint); font-weight:600; margin-top:14px;">Invited by email · ${p.invitedEmployees.length} people</p>
+    <div style="text-align:center; margin-top:6px;"><button class="btn-text" onclick="state.host.screen='home'; render();">← Back to your pulses</button></div>
   </div>`;
 };
 function liveAggregateHTML(qq,pq){
@@ -1126,7 +1147,7 @@ function liveAggregateHTML(qq,pq){
 }
 function simulateLiveJoins(){
   const p = activePulse();
-  const target = p.participantCount;
+  const target = p.invitedEmployees.length;
   const step = ()=>{
     if(p.responses.length < target){
       const batch = Math.ceil(target/6);
@@ -1146,15 +1167,15 @@ window.simulateLiveJoins=simulateLiveJoins; window.nextLiveQuestion=nextLiveQues
 /* ---------- PRIVATE STATUS ---------- */
 HOST_RENDERERS['private-status'] = function(){
   const p = activePulse();
-  const pct = Math.round(p.responses.length/p.participantCount*100);
+  const pct = Math.round(p.responses.length/p.invitedEmployees.length*100);
   return `<div class="pane pane-narrow fade-in">
     <div class="live-hero">
       <div class="eyebrow">Private Pulse · Sent</div>
       <h2 style="font-size:22px;">${p.name}</h2>
-      <p style="color:var(--ink-soft); font-size:13px; margin-top:8px;">${p.participantCount} employees invited by email</p>
+      <p style="color:var(--ink-soft); font-size:13px; margin-top:8px;">${p.invitedEmployees.length} employees invited by email</p>
     </div>
     <div class="card-surface" style="padding:30px; text-align:center;">
-      <div class="bignum-result" style="font-size:46px;">${p.responses.length} / ${p.participantCount}</div>
+      <div class="bignum-result" style="font-size:46px;">${p.responses.length} / ${p.invitedEmployees.length}</div>
       <p style="color:var(--ink-faint); font-size:13px; margin:6px 0 18px;">responses (${pct}%)</p>
       <div class="result-bar-track" style="max-width:320px; margin:0 auto 22px;"><div class="result-bar-fill" style="width:${pct}%; background:var(--mint);"></div></div>
       <div style="display:flex; gap:12px; justify-content:center;">
@@ -1168,9 +1189,9 @@ HOST_RENDERERS['private-status'] = function(){
 function simulatePrivateResponses(){
   const p = activePulse();
   const step = ()=>{
-    if(p.responses.length < p.participantCount){
-      const batch = Math.ceil(p.participantCount/6);
-      for(let i=0;i<batch && p.responses.length<p.participantCount;i++){
+    if(p.responses.length < p.invitedEmployees.length){
+      const batch = Math.ceil(p.invitedEmployees.length/6);
+      for(let i=0;i<batch && p.responses.length<p.invitedEmployees.length;i++){
         p.responses.push({id:'r'+Math.random().toString(36).slice(2,9), answers:fakeRespondentAnswers(p.questions), isReal:false});
       }
       render();
@@ -1187,7 +1208,7 @@ window.simulatePrivateResponses=simulatePrivateResponses;
 HOST_RENDERERS['snapshot'] = function(){
   const p = snapshotPulse();
   const snap = computeSnapshot(p);
-  const rate = p.participantCount? Math.round(p.responses.length/p.participantCount*100) : 0;
+  const rate = p.invitedEmployees.length? Math.round(p.responses.length/p.invitedEmployees.length*100) : 0;
   const filtered = state.host.commentFilter==='all' ? snap.allComments : snap.allComments.filter(c=>c.tag===state.host.commentFilter);
 
   return `<div class="pane fade-in">
@@ -1364,45 +1385,56 @@ EMP_RENDERERS['entry'] = function(){
   `);
 };
 
-/* ---------- entry: join (live) ---------- */
-EMP_RENDERERS['join'] = function(){
-  const p = activePulse();
-  return phoneShell(`
-    <div class="emp-mark">${logoSVG()}<span>GUMMYGUM</span></div>
-    <div class="emp-center">
-      <div class="eyebrow" style="text-align:center;">Join Pulse</div>
-      <h2>Enter the code from your host</h2>
-      <input class="join-input" maxlength="7" placeholder="000 000" value="${state.employee.joinInput}" oninput="empJoinInput(this.value)">
-      <button class="btn btn-primary" style="width:100%; justify-content:center;" onclick="empJoinSubmit()">Join</button>
-      <p style="font-size:11.5px; color:var(--ink-faint); margin-top:14px;">Hint: try <b>${p.joinCode}</b></p>
-    </div>
-  `);
-};
-function empJoinInput(v){ state.employee.joinInput=v; }
-function empJoinSubmit(){
-  const p = activePulse();
-  if(state.employee.joinInput.replace(/\s/g,'') === p.joinCode.replace(/\s/g,'')){
-    state.employee.screen='welcome'; render();
-  } else { showToast('That code doesn\'t match — try '+p.joinCode); }
-}
-window.empJoinInput=empJoinInput; window.empJoinSubmit=empJoinSubmit;
-
-/* ---------- entry: invite (private) ---------- */
+/* ---------- entry: email invite (both Live and Private are email-based) ---------- */
 EMP_RENDERERS['invite'] = function(){
+  const p = activePulse();
+  const isLive = p.delivery==='live';
   return phoneShell(`
     <div class="emp-mark">${logoSVG()}<span>GUMMYGUM</span></div>
     <div class="emp-center">
       <div style="font-size:34px; margin-bottom:14px;">✉️</div>
       <div class="eyebrow" style="text-align:center;">New message</div>
       <h2>You've been invited to a pulse</h2>
-      <p>Your team lead would like to hear how work is going. It only takes a couple of minutes.</p>
-      <button class="btn btn-primary" style="margin-top:20px;" onclick="state.employee.screen='welcome'; render();">Open Pulse</button>
+      <p>${isLive ? 'Your host is running this one live and will see responses as they come in. It only takes a couple of minutes.' : 'Your team lead would like to hear how work is going. Answer whenever works for you — it only takes a couple of minutes.'}</p>
+      <button class="btn btn-primary" style="margin-top:20px;" onclick="state.employee.screen='verify-email'; render();">Open Pulse</button>
     </div>
   `);
 };
 
-/* ---------- welcome ---------- */
-EMP_RENDERERS['welcome'] = function(){
+/* ---------- verify email against the host's invite list ---------- */
+EMP_RENDERERS['verify-email'] = function(){
+  const e = state.employee;
+  return phoneShell(`
+    <div class="emp-mark">${logoSVG()}<span>GUMMYGUM</span></div>
+    <div class="emp-center">
+      <div class="eyebrow" style="text-align:center;">Confirm it's you</div>
+      <h2>Enter the email this was sent to</h2>
+      <input class="field-input" style="text-align:center; font-size:15px; margin:18px 0;" type="email" placeholder="you@gummygum.com" value="${e.emailInput||''}" oninput="empEmailInput(this.value)">
+      ${e.emailError ? `<div class="privacy-note" style="justify-content:center;">⚠️ ${e.emailError}</div>` : ''}
+      <button class="btn btn-primary" style="width:100%; justify-content:center; margin-top:10px;" onclick="empEmailSubmit()">Continue</button>
+      <p style="font-size:11px; color:var(--ink-faint); margin-top:14px;">Hint: try <b>${activePulse().invitedEmployees[0].email}</b></p>
+    </div>
+  `);
+};
+function empEmailInput(v){ state.employee.emailInput=v; state.employee.emailError=null; }
+function empEmailSubmit(){
+  const e = state.employee;
+  const p = activePulse();
+  const typed = (e.emailInput||'').trim().toLowerCase();
+  const match = p.invitedEmployees.find(inv=>inv.email.toLowerCase()===typed);
+  if(match){
+    e.verifiedEmail = match.email;
+    e.emailError = null;
+    e.screen = 'instructions';
+  } else {
+    e.emailError = "That email isn't on the invite list for this pulse.";
+  }
+  render();
+}
+window.empEmailInput=empEmailInput; window.empEmailSubmit=empEmailSubmit;
+
+/* ---------- instructions (also introduces the pulse itself) ---------- */
+EMP_RENDERERS['instructions'] = function(){
   const p = activePulse();
   const mins = Math.max(1,Math.round(p.questions.length*0.4*10)/10);
   return phoneShell(`
@@ -1411,7 +1443,11 @@ EMP_RENDERERS['welcome'] = function(){
       <h2>${p.name || "How's work going?"}</h2>
       <p>${p.description || "We'd like to understand how you're experiencing work right now."}</p>
       <div class="emp-meta-row"><span>${p.questions.length} questions</span><span>·</span><span>~${mins} min</span></div>
-      <button class="btn btn-primary" style="width:100%; justify-content:center;" onclick="empStart()">Start</button>
+      <div class="instr-list">
+        <div class="instr-item"><span class="instr-dot"></span>Answer honestly — there are no right or wrong answers.</div>
+        <div class="instr-item"><span class="instr-dot"></span>You can go back and change an answer before submitting.</div>
+      </div>
+      <button class="btn btn-primary" style="width:100%; justify-content:center;" onclick="empStart()">Begin</button>
       ${p.privacy==='anonymous' ? `<div class="privacy-note">🕶️ Your response is anonymous</div>` : `<div class="privacy-note">🪪 Your response will be identified</div>`}
     </div>
   `);
@@ -1512,34 +1548,35 @@ EMP_RENDERERS['already'] = function(){
    two completed pulses with realistic historical data.
    ========================================================= */
 (function seed(){
-  function makePulse({name, description, template, delivery, participantCount, privacy, createdDate, status, respondentCount}){
+  function makePulse({name, description, template, delivery, inviteCount, privacy, createdDate, status, respondentCount}){
     const questions = cloneQuestions(TEMPLATES[template].questions);
     const id = 'p'+Math.random().toString(36).slice(2,9);
+    const invitedEmployees = DIRECTORY.slice(0, inviteCount).map(p=>({...p}));
     const responses = [];
     for(let i=0;i<respondentCount;i++){
       responses.push({id:'r'+Math.random().toString(36).slice(2,9), answers:fakeRespondentAnswers(questions), isReal:false});
     }
     return {
-      id, name, description, template, questions, delivery, scope:'team',
-      participantCount, privacy, joinCode:String(Math.floor(100000+Math.random()*900000)).replace(/(\d{3})(\d{3})/,'$1 $2'),
+      id, name, description, template, questions, delivery,
+      invitedEmployees, privacy,
       status, createdDate, liveQIndex:0, responses,
     };
   }
 
   const activeOne = makePulse({
     name:'Team Experience Pulse', description:'A quick check-in on how the team is doing this month.',
-    template:'team', delivery:'private', participantCount:20, privacy:'anonymous',
-    createdDate:'Sep 20', status:'collecting', respondentCount:6,
+    template:'team', delivery:'private', inviteCount:8, privacy:'anonymous',
+    createdDate:'Sep 20', status:'collecting', respondentCount:5,
   });
   const historyOne = makePulse({
     name:'Manager Support Check', description:'Understand how supported people feel by their manager.',
-    template:'manager', delivery:'private', participantCount:15, privacy:'anonymous',
-    createdDate:'Aug 12', status:'completed', respondentCount:13,
+    template:'manager', delivery:'private', inviteCount:9, privacy:'anonymous',
+    createdDate:'Aug 12', status:'completed', respondentCount:8,
   });
   const historyTwo = makePulse({
     name:'Workload Pulse', description:'Get an honest read on capacity and pace.',
-    template:'workload', delivery:'live', participantCount:24, privacy:'anonymous',
-    createdDate:'Jul 3', status:'completed', respondentCount:24,
+    template:'workload', delivery:'live', inviteCount:10, privacy:'anonymous',
+    createdDate:'Jul 3', status:'completed', respondentCount:10,
   });
 
   state.host.pulses = [activeOne, historyOne, historyTwo];
@@ -1564,7 +1601,7 @@ EMP_RENDERERS['already'] = function(){
 
 /* ---------- employee entry default ---------- */
 if(activePulse()){
-  state.employee.screen = activePulse().delivery==='live' ? 'join' : 'invite';
+  state.employee.screen = 'invite';
 }
 
 render();
