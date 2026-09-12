@@ -12,25 +12,25 @@ export function LikertScale({ value, onChange }) {
             key={opt}
             type="button"
             onClick={() => onChange(i)}
-            className={`flex items-center gap-3 p-3.5 sm:p-4 rounded-2xl border-2 border-ink text-left font-bold text-sm sm:text-base transition-all duration-150 cursor-pointer ${
+            className={`flex items-center gap-3.5 p-3.5 sm:p-4 rounded-xl border text-left font-medium text-sm sm:text-base transition-all duration-150 cursor-pointer ${
               isPicked
-                ? 'bg-accent-soft translate-x-0.5 translate-y-0.5 shadow-[1px_1px_0px_#1B1224]'
-                : 'bg-surface shadow-hard-sm hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-hard'
+                ? 'bg-purple-50/60 border-purple-600 ring-1 ring-purple-600/40 shadow-2xs'
+                : 'bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50/40 shadow-2xs'
             }`}
           >
             <span
-              className={`w-5 h-5 rounded-full border-2 border-ink flex items-center justify-center shrink-0 transition-colors ${
-                isPicked ? 'bg-accent' : 'bg-surface'
+              className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 transition-colors ${
+                isPicked ? 'border-purple-600 bg-purple-600' : 'border-slate-300 bg-white'
               }`}
             >
               <span
-                className={`w-2 h-2 rounded-full bg-ink transition-opacity ${
+                className={`w-1.5 h-1.5 rounded-full bg-white transition-opacity ${
                   isPicked ? 'opacity-100' : 'opacity-0'
                 }`}
               />
             </span>
-            <span className="text-lg leading-none shrink-0">{emoji}</span>
-            <span className="text-ink">{opt}</span>
+            <span className="text-base leading-none shrink-0 select-none">{emoji}</span>
+            <span className="text-slate-900 font-semibold">{opt}</span>
           </button>
         );
       })}

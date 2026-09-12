@@ -8,10 +8,10 @@ export function Chip({
     <button
       type="button"
       onClick={onClick}
-      className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-extrabold border-2 border-ink transition-all duration-150 cursor-pointer ${
+      className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all duration-150 cursor-pointer ${
         active
-          ? 'bg-accent text-ink shadow-hard-sm'
-          : 'bg-surface text-ink hover:bg-accent-soft'
+          ? 'bg-slate-900 text-white shadow-xs'
+          : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 hover:text-slate-900'
       } ${className}`}
     >
       {children}

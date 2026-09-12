@@ -14,12 +14,12 @@ export function Stepper({ currentStepIndex = 0 }) {
             <li key={label} className="flex items-center gap-2 sm:gap-3">
               <div className="flex items-center gap-2">
                 <span
-                  className={`w-6 h-6 rounded-full border-2 border-ink text-[11px] font-black flex items-center justify-center select-none transition-colors shrink-0 ${
+                  className={`w-6 h-6 rounded-full text-[11px] font-bold flex items-center justify-center select-none transition-all shrink-0 ${
                     isDone
-                      ? 'bg-mint text-white'
+                      ? 'bg-emerald-500 text-white shadow-xs'
                       : isCurrent
-                      ? 'bg-accent text-white'
-                      : 'bg-surface text-ink-faint border-ink/40'
+                      ? 'bg-accent text-white ring-2 ring-accent/25 shadow-xs'
+                      : 'bg-surface-2 text-ink-faint border border-ink/20'
                   }`}
                 >
                   {isDone ? <CheckIcon className="w-3 h-3 text-white" /> : i + 1}

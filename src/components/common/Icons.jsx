@@ -1,11 +1,17 @@
 export function LogoIcon({ className = 'w-7 h-7' }) {
   return (
-    <svg className={className} viewBox="0 0 30 30" fill="none">
-      <circle cx="15" cy="15" r="12.5" stroke="#1B1224" strokeWidth="2" />
+    <svg className={className} viewBox="0 0 32 32" fill="none">
+      <defs>
+        <linearGradient id="pulseLogoGrad" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#8B5CF6" />
+          <stop offset="1" stopColor="#6D28D9" />
+        </linearGradient>
+      </defs>
+      <rect width="32" height="32" rx="9" fill="url(#pulseLogoGrad)" />
       <path
-        d="M8.5 16.5c1.8 0 1.8-4 3.6-4s1.8 4 3.6 4 1.8-4 3.6-4 1.8 4 3.6 4"
-        stroke="#7A4FE0"
-        strokeWidth="2.3"
+        d="M7 16h4l3-6 4 12 3-8 3 4 4-2"
+        stroke="#FFFFFF"
+        strokeWidth="2.2"
         strokeLinecap="round"
         strokeLinejoin="round"
       />

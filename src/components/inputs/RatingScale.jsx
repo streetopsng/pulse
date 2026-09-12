@@ -14,13 +14,13 @@ export function RatingScale({ max = 5, value, onChange }) {
               key={n}
               type="button"
               onClick={() => onChange(n)}
-              className={`flex-1 aspect-square max-w-[60px] rounded-2xl border-[2.5px] border-ink font-display font-bold text-xl sm:text-2xl flex items-center justify-center transition-all duration-150 cursor-pointer ${
+              className={`flex-1 aspect-square max-w-[64px] rounded-xl border flex items-center justify-center transition-all duration-150 cursor-pointer ${
                 isPicked
-                  ? 'bg-accent text-ink translate-x-0.5 translate-y-0.5 shadow-[1px_1px_0px_#1B1224]'
-                  : 'bg-surface text-ink shadow-hard-sm hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-hard'
+                  ? 'bg-purple-50 border-purple-600 ring-2 ring-purple-600/25 shadow-xs scale-105'
+                  : 'bg-white border-slate-200 hover:border-purple-300 hover:bg-purple-50/20 shadow-2xs'
               }`}
             >
-              <span className="text-2xl leading-none">{emoji}</span>
+              <span className="text-2xl leading-none select-none">{emoji}</span>
             </button>
           );
         })}

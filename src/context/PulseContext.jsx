@@ -12,8 +12,8 @@ import {
 
 const PulseContext = createContext(null);
 
-const STORAGE_KEY_PULSES = 'pulse_surveys_data';
-const STORAGE_KEY_COMPLETED = 'pulse_completed_ids';
+const STORAGE_KEY_PULSES = 'pulse_surveys_production_v1';
+const STORAGE_KEY_COMPLETED = 'pulse_completed_ids_v1';
 
 function createBlankDraft() {
   return {
@@ -23,89 +23,9 @@ function createBlankDraft() {
     questions: [],
     openQ: null,
     delivery: 'private',
-    invitedEmployees: DIRECTORY.slice(0, 4).map((p) => ({ ...p })),
+    invitedEmployees: [],
     privacy: 'anonymous',
   };
-}
-
-function createSeedPulses() {
-  function makePulse({
-    name,
-    description,
-    template,
-    delivery,
-    inviteCount,
-    privacy,
-    createdDate,
-    status,
-    respondentCount,
-  }) {
-    const tmplQuestions = TEMPLATES[template]?.questions || [];
-    const questions = cloneQuestions(tmplQuestions);
-    const id = 'p_' + Math.random().toString(36).slice(2, 9);
-    const invitedEmployees = DIRECTORY.slice(0, inviteCount).map((p) => ({ ...p }));
-    const responses = [];
-    for (let i = 0; i < respondentCount; i++) {
-      responses.push({
-        id: 'r_' + Math.random().toString(36).slice(2, 9),
-        answers: fakeRespondentAnswers(questions),
-        isReal: false,
-        submittedAt: new Date().toISOString(),
-      });
-    }
-    return {
-      id,
-      name,
-      description,
-      template,
-      questions,
-      delivery,
-      invitedEmployees,
-      privacy,
-      status,
-      createdDate,
-      liveQIndex: 0,
-      responses,
-    };
-  }
-
-  const activeOne = makePulse({
-    name: 'Team Experience Pulse',
-    description: 'A quick check-in on how the team is doing this month.',
-    template: 'team',
-    delivery: 'private',
-    inviteCount: 8,
-    privacy: 'anonymous',
-    createdDate: 'Sep 20',
-    status: 'collecting',
-    respondentCount: 5,
-  });
-
-  const historyOne = makePulse({
-    name: 'Manager Support Check',
-    description: 'Understand how supported people feel by their manager.',
-    template: 'manager',
-    delivery: 'private',
-    inviteCount: 9,
-    privacy: 'anonymous',
-    createdDate: 'Aug 12',
-    status: 'completed',
-    respondentCount: 8,
-  });
-
-  const historyTwo = makePulse({
-    name: 'Workload Pulse',
-    description: 'Get an honest read on capacity and pace.',
-    template: 'workload',
-    delivery: 'live',
-    inviteCount: 10,
-    privacy: 'anonymous',
-    createdDate: 'Jul 3',
-    status: 'completed',
-    respondentCount: 10,
-  });
-
-  return [activeOne, historyOne, historyTwo];
 }
 
 function getStoredPulses() {
@@ -113,20 +33,14 @@ function getStoredPulses() {
     const raw = localStorage.getItem(STORAGE_KEY_PULSES);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        // Ensure legacy pulses have invitedEmployees
-        return parsed.map((p) => ({
-          ...p,
-          invitedEmployees:
-            p.invitedEmployees ||
-            DIRECTORY.slice(0, p.participantCount || 8).map((emp) => ({ ...emp })),
-        }));
+      if (Array.isArray(parsed)) {
+        return parsed;
       }
     }
   } catch (e) {
     console.error('Failed to load pulses from storage', e);
   }
-  return createSeedPulses();
+  return [];
 }
 
 function getStoredCompleted() {
@@ -315,11 +229,42 @@ export function PulseProvider({ children }) {
       if (idx > -1) {
         list.splice(idx, 1);
       } else {
-        const person = DIRECTORY.find((p) => p.email === email);
-        if (person) list.push({ ...person });
+        const cleanName = email.split('@')[0].replace(/[._]/g, ' ');
+        list.push({ email, name: cleanName });
       }
       return { ...prev, invitedEmployees: list };
     });
+  }
+
+  function addInvitee(email, name) {
+    if (!email || !email.includes('@')) return false;
+    const cleanEmail = email.trim().toLowerCase();
+    let added = false;
+    setDraft((prev) => {
+      const list = [...(prev.invitedEmployees || [])];
+      if (list.some((p) => p.email.toLowerCase() === cleanEmail)) return prev;
+      const cleanName = name?.trim() || cleanEmail.split('@')[0].replace(/[._]/g, ' ');
+      list.push({ email: cleanEmail, name: cleanName });
+      added = true;
+      return { ...prev, invitedEmployees: list };
+    });
+    return added;
+  }
+
+  function removeInvitee(email) {
+    setDraft((prev) => ({
+      ...prev,
+      invitedEmployees: (prev.invitedEmployees || []).filter(
+        (p) => p.email.toLowerCase() !== email.toLowerCase()
+      ),
+    }));
+  }
+
+  function clearInvitees() {
+    setDraft((prev) => ({
+      ...prev,
+      invitedEmployees: [],
+    }));
   }
 
   // Question builder operations
@@ -523,14 +468,25 @@ export function PulseProvider({ children }) {
   function empEmailSubmit() {
     if (!activePulse) return;
     const typed = (emailInput || '').trim().toLowerCase();
+    if (!typed || !typed.includes('@') || !typed.includes('.')) {
+      setEmailError("Please enter a valid work email address.");
+      return;
+    }
     const invited = activePulse.invitedEmployees || [];
+    if (invited.length === 0) {
+      // Open Access Mode - any employee can participate
+      setVerifiedEmail(typed);
+      setEmailError(null);
+      setEmpScreen('instructions');
+      return;
+    }
     const match = invited.find((inv) => inv.email.toLowerCase() === typed);
     if (match) {
       setVerifiedEmail(match.email);
       setEmailError(null);
       setEmpScreen('instructions');
     } else {
-      setEmailError("That email isn't on the invite list for this pulse.");
+      setEmailError("This email isn't on the recipient list for this pulse survey.");
     }
   }
 
@@ -653,6 +609,9 @@ export function PulseProvider({ children }) {
         draft,
         updateDraft,
         toggleInvitee,
+        addInvitee,
+        removeInvitee,
+        clearInvitees,
         commentFilter,
         setCommentFilter,
         showToast,

@@ -29,20 +29,20 @@ export function QuestionScreen() {
   return (
     <div>
       {/* Question Counter & Progress */}
-      <div className="flex items-center justify-between text-xs font-black uppercase tracking-wider text-ink-faint mb-2">
+      <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">
         <span>Question {empQIndex + 1} of {questions.length}</span>
         <span>{Math.round(progressPct)}%</span>
       </div>
 
-      <div className="h-2 bg-gray-soft border border-ink rounded-full overflow-hidden mb-6">
+      <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden mb-6">
         <div
-          className="h-full bg-accent rounded-full transition-all duration-300"
+          className="h-full bg-indigo-600 rounded-full transition-all duration-300"
           style={{ width: `${progressPct}%` }}
         />
       </div>
 
       {/* Question Headline */}
-      <h2 className="font-display font-black text-xl sm:text-2xl text-ink mb-6 leading-snug">
+      <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 mb-6 leading-snug">
         {qq.text}
       </h2>
 
@@ -90,9 +90,9 @@ export function QuestionScreen() {
       </div>
 
       {/* Nav Controls */}
-      <div className="flex items-center justify-between pt-4 border-t-2 border-line-soft">
+      <div className="flex items-center justify-between pt-5 border-t border-slate-100">
         {empQIndex > 0 ? (
-          <Button variant="text" onClick={empBack}>
+          <Button variant="ghost" size="sm" onClick={empBack}>
             ← Back
           </Button>
         ) : (

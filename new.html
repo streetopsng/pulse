@@ -45,14 +45,14 @@
   --radius-m:18px;
   --radius-l:26px;
   --radius-xl:34px;
+  --bw:1px;
+  --bw-lg:1.5px;
 
-  --bw:2px;
-  --bw-lg:2.5px;
-
-  --shadow-hard:4px 4px 0 var(--ink);
-  --shadow-hard-sm:3px 3px 0 var(--ink);
-  --shadow-hard-lg:6px 6px 0 var(--ink);
-  --shadow-soft:0 10px 26px rgba(20,17,16,.08);
+  --shadow-hard:0 4px 14px -2px rgba(27,18,36,0.07), 0 2px 6px -1px rgba(27,18,36,0.04);
+  --shadow-hard-sm:0 1px 3px rgba(27,18,36,0.05), 0 1px 2px rgba(27,18,36,0.03);
+  --shadow-hard-lg:0 12px 30px -4px rgba(122,79,224,0.10), 0 4px 12px -2px rgba(27,18,36,0.04);
+  --shadow-hard-xl:0 20px 40px -6px rgba(122,79,224,0.13), 0 8px 18px -4px rgba(27,18,36,0.05);
+  --shadow-soft:0 10px 26px rgba(20,17,16,.06);
 
   --dur-1:150ms; --dur-2:230ms; --dur-3:400ms;
   --ease-out: cubic-bezier(.19,1,.22,1);
@@ -63,32 +63,31 @@
   --font-mono:'IBM Plex Mono', monospace;
 }
 *{box-sizing:border-box;}
+
 html,body{margin:0;padding:0;}
 body{
-  background:var(--bg); color:var(--ink); font-family:var(--font-body);
-  -webkit-font-smoothing:antialiased; font-size:15px; line-height:1.55;
-  background-image:
-    radial-gradient(circle at 8% 10%, rgba(245,129,31,.05), transparent 40%),
-    radial-gradient(circle at 92% 85%, rgba(245,129,31,.05), transparent 40%);
+  background:var(--bg);
+  color:var(--ink);
+  font-family:var(--font-body);
+  -webkit-font-smoothing:antialiased;
+  min-height:100vh;
+  position:relative;
+  overflow-x:hidden;
 }
-h1,h2,h3,h4{font-family:var(--font-display); margin:0; font-weight:700; letter-spacing:-0.01em;}
-p{margin:0;}
-button{font-family:var(--font-body); cursor:pointer;}
-:focus-visible{outline:3px solid var(--accent); outline-offset:2px; border-radius:4px;}
-::selection{background:var(--accent-tint);}
-code{font-family:var(--font-mono);}
 
-/* faint background letters/icons, decorative texture */
-.bg-deco{position:fixed; inset:0; z-index:0; pointer-events:none; overflow:hidden;}
-.bg-deco span{
-  position:absolute; font-family:var(--font-display); font-weight:800; color:var(--ink);
-  opacity:.035; user-select:none;
+/* Background canvas — preserved intact */
+.bg-deco{
+  position:fixed; inset:0; pointer-events:none; z-index:0;
+  background-image:
+    radial-gradient(circle at 8% 10%, rgba(122,79,224,.05), transparent 40%),
+    radial-gradient(circle at 92% 85%, rgba(122,79,224,.05), transparent 40%);
 }
 
 /* ============ TOP SHELL ============ */
 #topbar{
   display:flex; align-items:center; justify-content:space-between; padding:16px 30px;
-  background:var(--surface); border-bottom:var(--bw) solid var(--ink); position:sticky; top:0; z-index:30;
+  background:rgba(255,255,255,0.92); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+  border-bottom:1px solid rgba(27,18,36,0.08); position:sticky; top:0; z-index:30;
 }
 .tb-left{display:flex; align-items:center; gap:16px;}
 .tb-mark{display:flex; align-items:center; gap:10px;}
@@ -96,10 +95,6 @@ code{font-family:var(--font-mono);}
 .tb-name{font-family:var(--font-display); font-weight:800; font-size:19px;}
 .tb-crumb{font-family:var(--font-body); font-weight:600; font-size:12px; color:var(--ink-soft); letter-spacing:.02em; display:flex; align-items:center; gap:6px;}
 .tb-crumb b{color:var(--ink); font-weight:800;}
-.view-switch{display:flex; background:var(--surface); border:var(--bw) solid var(--ink); border-radius:99px; padding:4px; gap:3px;}
-.view-switch button{border:none; background:none; padding:8px 16px; border-radius:99px; font-size:12.5px; font-weight:800; color:var(--ink-soft); transition:all var(--dur-2) var(--ease-out);}
-.view-switch button.active{background:var(--accent); color:#fff; box-shadow:inset 0 0 0 var(--bw) var(--ink);}
-.view-switch-label{font-size:9.5px; font-weight:800; color:var(--ink-faint); text-transform:uppercase; letter-spacing:.08em; margin-right:4px;}
 
 #app{min-height:calc(100vh - 66px); position:relative; z-index:1;}
 .pane{padding:44px 32px 100px; max-width:1140px; margin:0 auto;}
@@ -342,14 +337,15 @@ code{font-family:var(--font-mono);}
 .comment-card{background:var(--surface); border:var(--bw) solid var(--ink); border-radius:var(--radius-m); padding:17px 19px; font-size:13.6px; line-height:1.5; position:relative; box-shadow:var(--shadow-hard-sm);}
 .comment-tag{position:absolute; top:15px; right:15px; width:9px;height:9px;border-radius:50%; border:1.5px solid var(--ink);}
 
-/* ============ EMPLOYEE PHONE FRAME ============ */
-.phone-stage{display:flex; justify-content:center; padding:36px 20px 60px;}
-.phone{
-  width:390px; min-height:720px; background:var(--surface); border-radius:46px; border:var(--bw-lg) solid var(--ink);
-  box-shadow:8px 8px 0 var(--ink); position:relative; overflow:hidden; display:flex; flex-direction:column;
+/* ============ EMPLOYEE WEB SURVEY CONTAINER ============ */
+.survey-stage{display:flex; justify-content:center; align-items:center; min-height:calc(100vh - 100px); padding:40px 20px;}
+.survey-card{
+  width:100%; max-width:760px; background:var(--surface); border-radius:24px; border:var(--bw) solid var(--ink);
+  box-shadow:var(--shadow-hard-lg); padding:48px 52px; display:flex; flex-direction:column; position:relative;
 }
-.phone-notch{position:absolute; top:0; left:50%; transform:translateX(-50%); width:120px; height:24px; background:var(--ink); border-radius:0 0 18px 18px; z-index:5;}
-.phone-screen{flex:1; display:flex; flex-direction:column; padding:46px 26px 30px; overflow-y:auto;}
+@media (max-width: 640px) {
+  .survey-card { padding: 28px 20px; border-radius: 18px; }
+}
 .emp-mark{display:flex; align-items:center; gap:8px; margin-bottom:22px; flex-shrink:0;}
 .emp-mark svg{width:20px;height:20px;}
 .emp-mark span{font-family:var(--font-body); font-weight:800; font-size:10px; color:var(--ink-faint); letter-spacing:.06em;}
@@ -423,12 +419,17 @@ code{font-family:var(--font-mono);}
       <svg class="tb-logo" viewBox="0 0 30 30"><circle cx="15" cy="15" r="12.5" fill="none" stroke="#1B1224" stroke-width="2"/><path d="M8.5 16.5c1.8 0 1.8-4 3.6-4s1.8 4 3.6 4 1.8-4 3.6-4 1.8 4 3.6 4" stroke="#7A4FE0" stroke-width="2.3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
       <span class="tb-name">Pulse Survey</span>
     </div>
-    <div class="tb-crumb">TEAM ENGAGEMENT <span>›</span> <b>Pulse Survey</b></div>
+    <div class="tb-crumb">TEAM ENGAGEMENT <span>›</span> <b>Host Console</b></div>
   </div>
-  <div class="view-switch">
-    <span class="view-switch-label">Prototype</span>
-    <button id="btnHostView" class="active" onclick="setTopView('host')">Host View</button>
-    <button id="btnEmpView" onclick="setTopView('employee')">Employee View</button>
+  <div class="tb-right" style="display:flex; align-items:center; gap:12px;">
+    <div style="display:flex; align-items:center; gap:6px; background:var(--surface-2); border:var(--bw) solid var(--ink); padding:6px 14px; border-radius:99px; font-size:11px; font-weight:800; color:var(--ink-soft);">
+      <span style="width:7px; height:7px; border-radius:50%; background:var(--mint); display:inline-block;"></span>
+      Active Workspace
+    </div>
+    <div style="display:flex; align-items:center; gap:8px; border-left:1px solid rgba(27,18,36,0.15); padding-left:12px;">
+      <div style="width:32px; height:32px; border-radius:50%; background:var(--accent-soft); border:var(--bw) solid var(--ink); display:flex; align-items:center; justify-content:center; font-weight:800; font-size:12px; color:var(--accent);">H</div>
+      <div style="font-size:12px; font-weight:800; line-height:1.2;">Host Admin</div>
+    </div>
   </div>
 </div>
 <div id="app"></div>
@@ -657,6 +658,8 @@ function snapshotPulse(){ return state.host.pulses.find(p=>p.id===state.host.sna
 /* ---------- boot / render root ---------- */
 function setTopView(v){
   state.topView=v;
+  const topbar = document.getElementById('topbar');
+  if(topbar) topbar.style.display = (v==='employee' ? 'none' : 'flex');
   document.getElementById('btnHostView').classList.toggle('active', v==='host');
   document.getElementById('btnEmpView').classList.toggle('active', v==='employee');
   if(v==='employee'){
@@ -763,8 +766,7 @@ function statusBadgeHTML(status){
 /* ---------- WELCOME — "Pulse Centre" landing, shown first ---------- */
 HOST_RENDERERS['welcome'] = function(){
   return `<div class="pane fade-in">
-    <div class="intro-hero">
-      <div class="pulse-orb-wrap">${pulseOrbSVG(true)}</div>
+    <div class="intro-hero" style="padding-top:20px;">
       <div class="eyebrow">GummyGum · Team Engagement</div>
       <h1>Welcome to<br><span class="hl">Pulse Centre</span></h1>
       <p>Everything you need to check in with your team — create a pulse, see what people are saying, and keep track of it over time.</p>
@@ -1338,14 +1340,11 @@ function renderPreviewModal(){
       <div class="emp-qtext">${qq.text}</div>
       ${inputHTML}`;
   }
-  modal.innerHTML = `<div style="position:relative;">
+  modal.innerHTML = `<div style="position:relative; width:100%; max-width:680px; margin:0 auto;">
     <button class="btn btn-icon" style="position:absolute; top:-52px; right:0; background:#fff;" onclick="closePreview()">✕</button>
-    <div class="phone">
-      <div class="phone-notch"></div>
-      <div class="phone-screen">
-        <div class="emp-mark">${logoSVG()}<span>PREVIEW · EMPLOYEE VIEW</span></div>
-        ${body}
-      </div>
+    <div class="survey-card" style="max-width:680px; margin:0 auto;">
+      <div class="emp-mark">${logoSVG()}<span>PREVIEW · SURVEY EXPERIENCE</span></div>
+      ${body}
     </div>
   </div>`;
 }
@@ -1371,7 +1370,7 @@ const EMP_RENDERERS = {};
 const EMP_POST = {};
 
 function phoneShell(inner){
-  return `<div class="phone-stage"><div class="phone"><div class="phone-notch"></div><div class="phone-screen">${inner}</div></div></div>`;
+  return `<div class="survey-stage"><div class="survey-card">${inner}</div></div>`;
 }
 
 EMP_RENDERERS['entry'] = function(){

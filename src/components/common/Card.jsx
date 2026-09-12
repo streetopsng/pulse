@@ -6,13 +6,13 @@ export function Card({
   ...props
 }) {
   const hoverStyles = hoverEffect
-    ? 'cursor-pointer transition-all duration-200 hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-hard-lg'
+    ? 'cursor-pointer transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:border-accent/40'
     : '';
 
   return (
     <div
       onClick={onClick}
-      className={`bg-surface border-2 border-ink rounded-3xl shadow-hard ${hoverStyles} ${className}`}
+      className={`bg-surface border border-ink/10 rounded-2xl shadow-sm ${hoverStyles} ${className}`}
       {...props}
     >
       {children}

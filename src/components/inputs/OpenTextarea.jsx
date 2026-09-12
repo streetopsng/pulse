@@ -6,9 +6,9 @@ export function OpenTextarea({ value = '', onChange, placeholder = 'Type your an
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         rows={4}
-        className="w-full border-2 border-ink rounded-2xl p-4 text-base font-body bg-surface text-ink placeholder:text-ink-faint resize-none focus:outline-none focus:shadow-[3px_3px_0px_#7A4FE0] transition-shadow"
+        className="w-full border border-slate-200 rounded-xl p-4 text-sm font-medium bg-white text-slate-900 placeholder:text-slate-400 resize-none focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-600 transition-all shadow-2xs"
       />
-      <div className="text-right text-xs font-bold text-ink-faint mt-1.5 pr-1">
+      <div className="text-right text-xs font-medium text-slate-400 mt-1.5 pr-1">
         {(value || '').length} characters
       </div>
     </div>

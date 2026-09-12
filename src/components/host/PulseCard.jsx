@@ -1,10 +1,13 @@
+import { useState } from 'react';
 import { TEMPLATES } from '../../constants/templates';
 import { computeSnapshot } from '../../utils/analytics';
 import { BoltIcon, CheckIcon, CalendarIcon } from '../common/Icons';
 import { usePulse } from '../../context/PulseContext';
+import { ConfirmationModal } from '../common/ConfirmationModal';
 
 export function PulseCard({ pulse }) {
   const { openPulseCard, openSnapshot, deletePulse } = usePulse();
+  const [showConfirm, setShowConfirm] = useState(false);
   const snap = computeSnapshot(pulse);
   const inviteCount = pulse.invitedEmployees?.length ?? pulse.participantCount ?? 0;
   const rate = inviteCount
@@ -15,42 +18,45 @@ export function PulseCard({ pulse }) {
   function renderStatusBadge(status) {
     if (status === 'live') {
       return (
-        <span className="inline-flex items-center gap-1.5 text-[10.5px] font-black uppercase tracking-wider px-3 py-1 rounded-full border-[1.5px] border-ink bg-accent text-ink shrink-0">
-          <BoltIcon className="w-3 h-3" /> Live
+        <span className="inline-flex items-center gap-1.5 text-[10.5px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full border border-purple-200 bg-purple-50 text-purple-700 shrink-0">
+          <BoltIcon className="w-3 h-3 text-purple-600" /> Live
         </span>
       );
     }
     if (status === 'collecting') {
       return (
-        <span className="inline-flex items-center gap-1.5 text-[10.5px] font-black uppercase tracking-wider px-3 py-1 rounded-full border-[1.5px] border-ink bg-gray-soft text-ink shrink-0">
+        <span className="inline-flex items-center gap-1.5 text-[10.5px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full border border-purple-200 bg-purple-50 text-purple-700 shrink-0">
           Collecting
         </span>
       );
     }
     return (
-      <span className="inline-flex items-center gap-1.5 text-[10.5px] font-black uppercase tracking-wider px-3 py-1 rounded-full border-[1.5px] border-ink bg-mint-soft text-mint shrink-0">
-        <CheckIcon className="w-3 h-3" /> Completed
+      <span className="inline-flex items-center gap-1.5 text-[10.5px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full border border-emerald-200 bg-emerald-50 text-emerald-700 shrink-0">
+        <CheckIcon className="w-3 h-3 text-emerald-600" /> Completed
       </span>
     );
   }
 
-  function handleDelete(e) {
+  function handleDeleteClick(e) {
     e.stopPropagation();
-    if (window.confirm(`Delete "${pulse.name}"? This action cannot be undone.`)) {
-      deletePulse(pulse.id);
-    }
+    setShowConfirm(true);
+  }
+
+  function handleConfirmDelete() {
+    deletePulse(pulse.id);
+    setShowConfirm(false);
   }
 
   return (
     <div
       onClick={() => openPulseCard(pulse.id)}
-      className="bg-surface border-2 border-ink rounded-3xl p-5 sm:p-6 shadow-hard-sm hover:shadow-hard hover:-translate-x-0.5 hover:-translate-y-0.5 transition-all duration-200 cursor-pointer group"
+      className="bg-surface border border-ink/10 hover:border-accent/40 rounded-2xl p-5 sm:p-6 shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-pointer group"
     >
       {/* Top Header */}
       <div className="flex items-start sm:items-center justify-between gap-3.5 mb-4">
         <div className="flex items-center gap-3.5 min-w-0">
           <div
-            className={`w-10 h-10 rounded-xl border-2 border-ink ${tmpl.bgColor} flex items-center justify-center text-lg shrink-0`}
+            className={`w-10 h-10 rounded-xl border border-ink/10 ${tmpl.bgColor} flex items-center justify-center text-lg shrink-0 shadow-2xs`}
           >
             {tmpl.icon}
           </div>
@@ -76,9 +82,9 @@ export function PulseCard({ pulse }) {
           {renderStatusBadge(pulse.status)}
           <button
             type="button"
-            onClick={handleDelete}
+            onClick={handleDeleteClick}
             title="Delete pulse"
-            className="opacity-0 group-hover:opacity-100 transition-opacity text-ink-faint hover:text-red-600 p-1 rounded-md text-xs font-bold ml-1 cursor-pointer"
+            className="opacity-0 group-hover:opacity-100 transition-opacity text-slate-400 hover:text-rose-600 p-1.5 rounded-lg hover:bg-rose-50 text-xs font-bold ml-1 cursor-pointer"
           >
             ✕
           </button>
@@ -86,38 +92,41 @@ export function PulseCard({ pulse }) {
       </div>
 
       {/* Bottom Metrics */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pt-4 border-t-2 border-dashed border-line-soft">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pt-4 border-t border-slate-100">
         <div className="flex items-center gap-7">
           <div className="flex flex-col">
             <div className="flex items-baseline gap-1">
-              <span className="font-display text-lg sm:text-xl font-bold text-ink">
+              <span className="text-lg sm:text-xl font-bold text-slate-900">
                 {pulse.responses.length}
               </span>
-              <span className="text-xs font-semibold text-ink-faint">
+              <span className="text-xs font-medium text-slate-400">
                 / {inviteCount}
               </span>
             </div>
-            <span className="text-[10.5px] font-extrabold text-ink-faint uppercase tracking-wider">
+            <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
               responses ({rate}%)
             </span>
           </div>
 
           <div className="flex flex-col">
-            {snap.overall !== null ? (
+            {snap.avgScore !== null ? (
               <>
-                <span className="font-display text-lg sm:text-xl font-bold text-accent-dark">
-                  {snap.overall}
-                </span>
-                <span className="text-[10.5px] font-extrabold text-ink-faint uppercase tracking-wider">
-                  / 5 overall
+                <div className="flex items-baseline gap-1">
+                  <span className="text-lg sm:text-xl font-bold text-purple-600">
+                    {snap.avgScore}
+                  </span>
+                  <span className="text-xs font-medium text-slate-400">/ 5</span>
+                </div>
+                <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+                  avg agreement
                 </span>
               </>
             ) : (
               <>
-                <span className="font-display text-lg sm:text-xl font-bold text-ink-faint">
+                <span className="text-lg sm:text-xl font-bold text-slate-300">
                   —
                 </span>
-                <span className="text-[10.5px] font-extrabold text-ink-faint uppercase tracking-wider">
+                <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
                   no responses yet
                 </span>
               </>
@@ -131,11 +140,22 @@ export function PulseCard({ pulse }) {
             e.stopPropagation();
             openSnapshot(pulse.id);
           }}
-          className="text-xs sm:text-sm font-extrabold text-ink underline underline-offset-4 decoration-accent decoration-2 hover:text-accent-dark cursor-pointer ml-auto sm:ml-0"
+          className="text-xs sm:text-sm font-semibold text-purple-600 hover:text-purple-700 transition-colors cursor-pointer ml-auto sm:ml-0"
         >
           View snapshot →
         </button>
       </div>
+
+      <ConfirmationModal
+        isOpen={showConfirm}
+        title={`Delete "${pulse.name}"?`}
+        message="This pulse survey and all collected participant responses will be permanently removed. This action cannot be undone."
+        confirmText="Delete Pulse"
+        cancelText="Cancel"
+        isDanger={true}
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setShowConfirm(false)}
+      />
     </div>
   );
 }

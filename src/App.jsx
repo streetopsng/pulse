@@ -1,5 +1,5 @@
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { PulseProvider, usePulse } from './context/PulseContext';
+import { PulseProvider } from './context/PulseContext';
 import { TopBar } from './components/layout/TopBar';
 import { HostView } from './components/host/HostView';
 import { EmployeeView } from './components/employee/EmployeeView';
@@ -7,15 +7,17 @@ import { PreviewModal } from './components/preview/PreviewModal';
 import { Toast } from './components/common/Toast';
 import { BgDeco } from './components/common/BgDeco';
 
-function MainLayout() {
-  const { topView } = usePulse();
-
+/**
+ * Production Host Management Portal (Manager / Organizer view)
+ * Accessible at root `/`
+ */
+function HostLayout() {
   return (
     <div className="relative min-h-screen flex flex-col z-10">
       <BgDeco />
       <TopBar />
       <main className="flex-1">
-        {topView === 'host' ? <HostView /> : <EmployeeView />}
+        <HostView />
       </main>
       <PreviewModal />
       <Toast />
@@ -23,7 +25,11 @@ function MainLayout() {
   );
 }
 
-function EmployeeStandaloneLayout() {
+/**
+ * Production Employee / Participant Survey Page
+ * Dedicated separate page accessible at `#/join` or `#/survey`
+ */
+function EmployeeLayout() {
   return (
     <div className="relative min-h-screen flex flex-col z-10">
       <BgDeco />
@@ -40,11 +46,12 @@ export default function App() {
     <PulseProvider>
       <HashRouter>
         <Routes>
-          {/* Main Interactive Prototype with TopBar switcher */}
-          <Route path="/" element={<MainLayout />} />
+          {/* Host Management Console */}
+          <Route path="/" element={<HostLayout />} />
 
-          {/* Standalone Participant Survey Route */}
-          <Route path="/join" element={<EmployeeStandaloneLayout />} />
+          {/* Participant Survey Route */}
+          <Route path="/join" element={<EmployeeLayout />} />
+          <Route path="/survey" element={<EmployeeLayout />} />
 
           {/* Fallback */}
           <Route path="*" element={<Navigate to="/" replace />} />

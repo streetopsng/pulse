@@ -1,44 +1,44 @@
 @import "tailwindcss";
 
 @theme {
-  --font-display: 'Baloo 2', sans-serif;
-  --font-body: 'Inter', sans-serif;
+  --font-display: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-body: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-mono: 'IBM Plex Mono', monospace;
 
-  --color-ink: #1B1224;
-  --color-ink-soft: #5B4F66;
-  --color-ink-faint: #9C90A8;
+  --color-ink: #0F172A;
+  --color-ink-soft: #475569;
+  --color-ink-faint: #94A3B8;
 
   --color-accent: #7A4FE0;
-  --color-accent-dark: #5C33B0;
-  --color-accent-soft: #EFE4FB;
-  --color-accent-tint: #D9C2F5;
+  --color-accent-dark: #6338CC;
+  --color-accent-soft: #F5F0FF;
+  --color-accent-tint: #EBE0FF;
 
   --color-bg-base: #FAF8FF;
   --color-surface: #FFFFFF;
-  --color-surface-2: #F6F1FC;
+  --color-surface-2: #F8FAFC;
 
-  --color-mint: #3FA66B;
-  --color-mint-soft: #DFF3E7;
+  --color-mint: #10B981;
+  --color-mint-soft: #ECFDF5;
 
-  --color-grape: #5B3E99;
-  --color-grape-soft: #E6DCF7;
+  --color-grape: #8B5CF6;
+  --color-grape-soft: #F5F3FF;
 
-  --color-amber: #9457C7;
-  --color-amber-soft: #F1E4FA;
+  --color-amber: #F59E0B;
+  --color-amber-soft: #FEF3C7;
 
-  --color-line-soft: #E8E0F5;
-  --color-gray-soft: #EFEAF7;
+  --color-line-soft: #E2E8F0;
+  --color-gray-soft: #F1F5F9;
 
-  --shadow-hard: 4px 4px 0px #1B1224;
-  --shadow-hard-sm: 3px 3px 0px #1B1224;
-  --shadow-hard-lg: 6px 6px 0px #1B1224;
-  --shadow-hard-xl: 8px 8px 0px #1B1224;
+  --shadow-hard-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-hard: 0 1px 3px 0 rgb(0 0 0 / 0.08), 0 1px 2px -1px rgb(0 0 0 / 0.06);
+  --shadow-hard-lg: 0 10px 15px -3px rgb(0 0 0 / 0.06), 0 4px 6px -4px rgb(0 0 0 / 0.04);
+  --shadow-hard-xl: 0 20px 25px -5px rgb(0 0 0 / 0.07), 0 8px 10px -6px rgb(0 0 0 / 0.04);
 }
 
 body {
   background-color: #FAF8FF;
-  color: #1B1224;
+  color: #0F172A;
   font-family: var(--font-body);
   -webkit-font-smoothing: antialiased;
   background-image:
@@ -49,18 +49,8 @@ body {
 
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-display);
-  font-weight: 700;
-  letter-spacing: -0.01em;
-}
-
-/* Console frame custom polygon clip path */
-.clip-console {
-  clip-path: polygon(0 24px, 24px 0, calc(100% - 24px) 0, 100% 24px, 100% calc(100% - 24px), calc(100% - 24px) 100%, 24px 100%, 0 calc(100% - 24px));
-}
-
-/* Hazard diagonal stripes */
-.hazard-stripes {
-  background-image: repeating-linear-gradient(115deg, #7A4FE0 0 6px, transparent 6px 11px);
+  font-weight: 600;
+  letter-spacing: -0.025em;
 }
 
 /* Instructions bullet list */
@@ -75,17 +65,16 @@ h1, h2, h3, h4, h5, h6 {
 .instr-item {
   display: flex;
   gap: 10px;
-  font-size: 12.8px;
-  color: var(--color-ink-soft, #5B4F66);
+  font-size: 13px;
+  color: var(--color-ink-soft, #475569);
   line-height: 1.5;
 }
 
 .instr-dot {
-  width: 7px;
-  height: 7px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
-  background: var(--color-accent, #7A4FE0);
-  border: 1.5px solid var(--color-ink, #1B1224);
+  background: var(--color-accent, #6366F1);
   flex-shrink: 0;
-  margin-top: 5px;
+  margin-top: 6px;
 }

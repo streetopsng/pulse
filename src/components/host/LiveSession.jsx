@@ -84,13 +84,13 @@ export function LiveSession() {
 
             return (
               <div key={optIndex} className="w-full">
-                <div className="flex justify-between text-xs sm:text-sm font-bold text-ink mb-1.5">
+                <div className="flex justify-between text-xs sm:text-sm font-semibold text-slate-700 mb-1.5">
                   <span>{opt}</span>
-                  <span>{pct}% ({count})</span>
+                  <span className="text-slate-500">{pct}% ({count})</span>
                 </div>
-                <div className="h-3.5 bg-gray-soft border-[1.5px] border-ink rounded-full overflow-hidden">
+                <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-accent rounded-full transition-all duration-500"
+                    className="h-full bg-indigo-600 rounded-full transition-all duration-500"
                     style={{ width: `${pct}%` }}
                   />
                 </div>
@@ -104,14 +104,14 @@ export function LiveSession() {
     // open comments
     return (
       <div className="flex flex-col gap-2.5">
-        <p className="text-xs font-extrabold text-ink-soft uppercase tracking-wider mb-1">
+        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">
           {pq.comments.length} comments shared
         </p>
         <div className="max-h-48 overflow-y-auto flex flex-col gap-2 pr-1">
           {pq.comments.map((c, i) => (
             <div
               key={i}
-              className="p-3 bg-surface-2 border border-ink/20 rounded-xl text-xs font-semibold text-ink leading-relaxed"
+              className="p-3.5 bg-slate-50 border border-slate-200/80 rounded-xl text-xs text-slate-700 leading-relaxed"
             >
               "{c.text}"
             </div>
@@ -124,119 +124,116 @@ export function LiveSession() {
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-8 py-8 sm:py-12">
       {/* Console Frame */}
-      <div className="bg-surface-2 border-[2.5px] border-ink rounded-3xl p-6 sm:p-8 shadow-hard mb-8 relative">
-        {/* Corner Accents */}
-        <div className="absolute top-3 left-3 w-2 h-2 rounded-full bg-accent border border-ink" />
-        <div className="absolute top-3 right-3 w-2 h-2 rounded-full bg-accent border border-ink" />
-        <div className="absolute bottom-3 left-3 w-2 h-2 rounded-full bg-accent border border-ink" />
-        <div className="absolute bottom-3 right-3 w-2 h-2 rounded-full bg-accent border border-ink" />
-
+      <div className="bg-surface border border-slate-200/80 rounded-2xl p-6 sm:p-8 shadow-sm mb-8 relative">
         {/* Top Console Bar */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b-2 border-dashed border-line-soft pb-4 mb-6">
-          <div className="flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-mint animate-ping" />
-            <span className="font-mono text-xs font-black uppercase tracking-wider text-ink">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-5 mb-6">
+          <div className="flex items-center gap-2.5">
+            <span className="relative flex h-2.5 w-2.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+            </span>
+            <span className="text-xs font-semibold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
               Live Session Active
             </span>
           </div>
 
-          <div className="text-xs font-bold text-ink-soft">
-            Invited: <b className="text-ink">{totalInvited} employees</b>
+          <div className="text-xs font-medium text-slate-500">
+            Invited: <span className="font-semibold text-slate-900">{totalInvited} employees</span>
           </div>
         </div>
 
         {/* 4-Stat Metric Row */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5 mb-6">
-          <div className="bg-surface border-2 border-ink rounded-2xl p-3.5 shadow-hard-sm">
-            <div className="text-[10.5px] font-black uppercase tracking-wider text-ink-soft flex items-center gap-1 mb-1">
-              <PeopleIcon /> Responses
+          <div className="bg-slate-50/70 border border-slate-200/70 rounded-xl p-4">
+            <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 flex items-center gap-1.5 mb-1.5">
+              <PeopleIcon className="w-3.5 h-3.5 text-slate-400" /> Responses
             </div>
-            <div className="font-display font-bold text-2xl text-accent-dark">
+            <div className="text-2xl font-bold text-indigo-600">
               {p.responses.length}
-              <span className="text-xs font-normal text-ink-faint ml-1">
+              <span className="text-xs font-normal text-slate-400 ml-1">
                 / {totalInvited}
               </span>
             </div>
           </div>
 
-          <div className="bg-surface border-2 border-ink rounded-2xl p-3.5 shadow-hard-sm">
-            <div className="text-[10.5px] font-black uppercase tracking-wider text-ink-soft flex items-center gap-1 mb-1">
-              <ClipboardIcon /> Question
+          <div className="bg-slate-50/70 border border-slate-200/70 rounded-xl p-4">
+            <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 flex items-center gap-1.5 mb-1.5">
+              <ClipboardIcon className="w-3.5 h-3.5 text-slate-400" /> Question
             </div>
-            <div className="font-display font-bold text-2xl text-ink">
+            <div className="text-2xl font-bold text-slate-900">
               {p.liveQIndex + 1}
-              <span className="text-xs font-normal text-ink-faint ml-1">
+              <span className="text-xs font-normal text-slate-400 ml-1">
                 / {p.questions.length}
               </span>
             </div>
           </div>
 
-          <div className="bg-surface border-2 border-ink rounded-2xl p-3.5 shadow-hard-sm">
-            <div className="text-[10.5px] font-black uppercase tracking-wider text-ink-soft flex items-center gap-1 mb-1">
-              <BoltIcon /> Status
+          <div className="bg-slate-50/70 border border-slate-200/70 rounded-xl p-4">
+            <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 flex items-center gap-1.5 mb-1.5">
+              <BoltIcon className="w-3.5 h-3.5 text-slate-400" /> Mode
             </div>
-            <div className="font-display font-bold text-2xl text-accent-dark">
-              Live
+            <div className="text-2xl font-bold text-indigo-600">
+              Realtime
             </div>
           </div>
 
-          <div className="bg-surface border-2 border-ink rounded-2xl p-3.5 shadow-hard-sm">
-            <div className="text-[10.5px] font-black uppercase tracking-wider text-ink-soft flex items-center gap-1 mb-1">
-              <CalendarIcon /> Sent
+          <div className="bg-slate-50/70 border border-slate-200/70 rounded-xl p-4">
+            <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 flex items-center gap-1.5 mb-1.5">
+              <CalendarIcon className="w-3.5 h-3.5 text-slate-400" /> Sent
             </div>
-            <div className="font-display font-bold text-lg sm:text-xl text-ink">
+            <div className="text-lg sm:text-xl font-bold text-slate-900 truncate">
               {p.createdDate}
             </div>
           </div>
         </div>
 
         {/* Progress Bar */}
-        <div className="h-2 bg-gray-soft border-[1.5px] border-ink rounded-full overflow-hidden mb-6">
+        <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden mb-6">
           <div
-            className="h-full bg-accent rounded-full transition-all duration-300"
+            className="h-full bg-indigo-600 rounded-full transition-all duration-300"
             style={{ width: `${progressPct}%` }}
           />
         </div>
 
         {/* Live Question Card */}
-        <Card className="p-6 mb-6">
-          <div className="inline-flex items-center gap-1 text-[10.5px] font-black uppercase tracking-wider px-3 py-1 rounded-full border border-ink bg-accent-soft text-accent-dark mb-3">
+        <div className="bg-white border border-slate-200/80 rounded-xl p-6 mb-6 shadow-xs">
+          <div className="inline-flex items-center gap-1 text-[10.5px] font-semibold uppercase tracking-wider px-2.5 py-1 rounded-md bg-indigo-50 text-indigo-700 border border-indigo-100 mb-3">
             {qq.type.toUpperCase()}
           </div>
-          <h3 className="font-display text-lg sm:text-xl font-bold text-ink mb-5 leading-snug">
+          <h3 className="text-lg sm:text-xl font-semibold text-slate-900 mb-5 leading-snug">
             {qq.text}
           </h3>
           {renderLiveAggregates()}
-        </Card>
+        </div>
 
         {/* Controls */}
-        <div className="flex flex-wrap items-center justify-center gap-3">
-          <Button variant="mint" onClick={simulateLiveJoins}>
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-100">
+          <Button variant="ghost" onClick={simulateLiveJoins}>
             ⚡ Simulate Responses
           </Button>
-          <Button variant="ghost" onClick={endLivePulse}>
-            End Pulse &amp; View Snapshot
-          </Button>
-          <Button
-            variant="primary"
-            disabled={p.liveQIndex >= p.questions.length - 1}
-            onClick={nextLiveQuestion}
-          >
-            Next Question →
-          </Button>
+          <div className="flex items-center gap-2.5">
+            <Button variant="ghost" onClick={endLivePulse}>
+              End Pulse &amp; View Snapshot
+            </Button>
+            <Button
+              variant="primary"
+              disabled={p.liveQIndex >= p.questions.length - 1}
+              onClick={nextLiveQuestion}
+            >
+              Next Question →
+            </Button>
+          </div>
         </div>
       </div>
 
       {/* Nav */}
       <div className="text-center">
-        <p className="text-xs text-ink-faint font-semibold mb-2">
-          Invited by email · {totalInvited} people
+        <p className="text-xs text-slate-400 font-medium mb-2">
+          Invited by email · {totalInvited} participants
         </p>
         <button
           type="button"
-          onClick={() => setHostScreen('home')}
-          className="text-xs font-black text-ink underline underline-offset-4 decoration-accent hover:text-accent-dark cursor-pointer"
-        >
+          onClick={() => setHostScreen('home')}>
           ← Back to your pulses
         </button>
       </div>

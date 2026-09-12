@@ -1,72 +1,69 @@
-import { LogoIcon } from '../common/Icons';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { usePulse } from '../../context/PulseContext';
 
 export function TopBar() {
-  const { topView, setTopView } = usePulse();
+  const { hostScreen, setHostScreen, startCreate } = usePulse();
+  const location = useLocation();
 
   return (
-    <header className="sticky top-0 z-30 bg-surface border-b-2 border-ink px-4 sm:px-8 py-3.5 flex items-center justify-between gap-4">
-      {/* Brand & Breadcrumbs */}
-      <div className="flex items-center gap-3 sm:gap-4">
+    <header className="sticky top-0 z-30 bg-white/85 backdrop-blur-md border-b border-slate-200/80 px-4 sm:px-8 py-3.5 flex items-center justify-between gap-4 transition-all">
+      {/* Brand & Context */}
+      <div className="flex items-center gap-4 sm:gap-6">
         <Link
           to="/"
-          onClick={() => setTopView('host')}
-          className="flex items-center gap-2.5"
+          onClick={() => setHostScreen('home')}
+          className="flex items-center gap-2 group cursor-pointer"
         >
-          <LogoIcon className="w-7 h-7 shrink-0" />
-          <span className="font-display font-black text-xl tracking-tight text-ink">
-            Pulse Survey
+          <span className="font-bold text-xl tracking-tight text-slate-900">
+            Pulse
+          </span>
+          <span className="hidden sm:inline-flex text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-md bg-purple-50 text-purple-700 border border-purple-200/70">
+            Enterprise
           </span>
         </Link>
 
-        <div className="hidden sm:flex items-center gap-1.5 text-xs font-semibold text-ink-soft tracking-wide ml-2">
-          <span>TEAM ENGAGEMENT</span>
-          <span className="text-ink-faint">›</span>
-          <b className="text-ink font-extrabold">Pulse Survey</b>
-        </div>
+        {/* Navigation Tabs */}
+        <nav className="hidden md:flex items-center gap-1 border-l border-slate-200 pl-4">
+          <button
+            type="button"
+            onClick={() => setHostScreen('home')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
+              hostScreen === 'home'
+                ? 'text-purple-700 bg-purple-50'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70'
+            }`}
+          >
+            Dashboard
+          </button>
+          <button
+            type="button"
+            onClick={() => setHostScreen('home')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
+              hostScreen === 'snapshot'
+                ? 'text-purple-700 bg-purple-50'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70'
+            }`}
+          >
+            Analytics
+          </button>
+        </nav>
       </div>
 
-      {/* Prototype View Switcher from new.html */}
-      <div className="flex items-center gap-2 sm:gap-3">
-        <div className="flex items-center bg-surface border-2 border-ink rounded-full p-1 gap-1 shadow-hard-sm">
-          <span className="text-[9.5px] font-extrabold uppercase tracking-wider text-ink-faint px-2 hidden sm:inline-block">
-            Prototype
-          </span>
-          <button
-            type="button"
-            onClick={() => setTopView('host')}
-            className={`px-3 sm:px-4 py-1.5 rounded-full text-xs font-extrabold transition-all cursor-pointer ${
-              topView === 'host'
-                ? 'bg-accent text-white shadow-[inset_0_0_0_2px_#1B1224]'
-                : 'text-ink-soft hover:text-ink'
-            }`}
-          >
-            Host View
-          </button>
-          <button
-            type="button"
-            onClick={() => setTopView('employee')}
-            className={`px-3 sm:px-4 py-1.5 rounded-full text-xs font-extrabold transition-all cursor-pointer ${
-              topView === 'employee'
-                ? 'bg-accent text-white shadow-[inset_0_0_0_2px_#1B1224]'
-                : 'text-ink-soft hover:text-ink'
-            }`}
-          >
-            Employee View
-          </button>
+      {/* Right Controls: Host User Pill */}
+      <div className="flex items-center gap-3">
+        {/* Host User Pill */}
+        <div className="flex items-center gap-2.5">
+          <div className="relative">
+            <div className="w-8 h-8 rounded-full bg-purple-100 border border-purple-200 flex items-center justify-center font-bold text-xs text-purple-700 shadow-2xs">
+              H
+            </div>
+            <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-white" />
+          </div>
+          <div className="hidden sm:flex flex-col text-left leading-tight">
+            <span className="text-xs font-semibold text-slate-900">Lead Host</span>
+            <span className="text-[10px] font-medium text-slate-400">Team Admin</span>
+          </div>
         </div>
-
-        {/* Direct link for standalone testing */}
-        <Link
-          to="/join"
-          target="_blank"
-          rel="noopener noreferrer"
-          title="Open participant survey in standalone tab"
-          className="hidden md:inline-flex items-center gap-1 text-xs font-extrabold text-ink bg-surface hover:bg-accent-soft border-2 border-ink px-3 py-1.5 rounded-full shadow-hard-sm hover:-translate-x-0.5 hover:-translate-y-0.5 transition-all cursor-pointer"
-        >
-          <span>↗</span>
-        </Link>
       </div>
     </header>
   );

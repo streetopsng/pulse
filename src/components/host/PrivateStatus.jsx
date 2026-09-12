@@ -39,37 +39,37 @@ export function PrivateStatus() {
     <div className="max-w-2xl mx-auto px-4 sm:px-8 py-8 sm:py-12">
       {/* Hero */}
       <div className="text-center mb-8">
-        <div className="inline-flex items-center gap-1.5 font-extrabold text-xs tracking-wider uppercase text-accent-dark bg-accent-soft border-2 border-ink px-3.5 py-1.5 rounded-full mb-3">
-          Private Pulse · Sent
+        <div className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-indigo-700 bg-indigo-50 border border-indigo-200 px-3 py-1 rounded-full mb-3">
+          Async Pulse · In Progress
         </div>
-        <h2 className="font-display text-2xl sm:text-3xl font-bold text-ink">
+        <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
           {p.name}
         </h2>
-        <p className="text-xs sm:text-sm text-ink-soft mt-1.5 font-bold">
-          {totalInvited} employees invited by email
+        <p className="text-xs sm:text-sm text-slate-500 mt-1.5 font-medium">
+          {totalInvited} participants invited by email
         </p>
       </div>
 
       {/* Progress Card */}
       <Card className="p-8 sm:p-10 text-center mb-6">
-        <div className="font-display font-bold text-4xl sm:text-5xl text-ink mb-1">
+        <div className="text-4xl sm:text-5xl font-bold text-slate-900 tracking-tight mb-1">
           {p.responses.length} / {totalInvited}
         </div>
-        <p className="text-xs sm:text-sm font-bold text-ink-faint mb-6">
+        <p className="text-xs sm:text-sm font-medium text-slate-500 mb-6">
           responses recorded ({pct}%)
         </p>
 
         {/* Progress Track */}
-        <div className="max-w-xs mx-auto h-3.5 bg-gray-soft border-[1.5px] border-ink rounded-full overflow-hidden mb-8">
+        <div className="max-w-xs mx-auto h-2 bg-slate-100 rounded-full overflow-hidden mb-8">
           <div
-            className="h-full bg-mint rounded-full transition-all duration-500"
+            className="h-full bg-indigo-600 rounded-full transition-all duration-500"
             style={{ width: `${pct}%` }}
           />
         </div>
 
         {/* Actions */}
         <div className="flex flex-wrap items-center justify-center gap-3">
-          <Button variant="mint" onClick={simulatePrivateResponses}>
+          <Button variant="ghost" onClick={simulatePrivateResponses}>
             ⚡ Simulate Responses
           </Button>
           <Button
@@ -90,7 +90,7 @@ export function PrivateStatus() {
         <button
           type="button"
           onClick={() => setHostScreen('home')}
-          className="text-xs font-black text-ink underline underline-offset-4 decoration-accent hover:text-accent-dark cursor-pointer"
+          className="text-xs font-semibold text-slate-500 hover:text-indigo-600 transition-colors cursor-pointer"
         >
           ← Back to your pulses
         </button>
