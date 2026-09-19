@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { TEMPLATES } from '../../constants/templates';
 import { computeSnapshot } from '../../utils/analytics';
 import { BoltIcon, CheckIcon, CalendarIcon } from '../common/Icons';
 import { usePulse } from '../../context/PulseContext';
@@ -13,7 +12,6 @@ export function PulseCard({ pulse }) {
   const rate = inviteCount
     ? Math.round((pulse.responses.length / inviteCount) * 100)
     : 0;
-  const tmpl = TEMPLATES[pulse.template] || TEMPLATES.custom;
 
   function renderStatusBadge(status) {
     if (status === 'live') {

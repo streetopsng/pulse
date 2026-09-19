@@ -7,7 +7,6 @@ export function PrivateStatus() {
     activePulse,
     closePulse,
     openSnapshot,
-    simulatePrivateResponses,
     setHostScreen,
   } = usePulse();
 
@@ -29,10 +28,20 @@ export function PrivateStatus() {
   const pct = totalInvited
     ? Math.round((p.responses.length / totalInvited) * 100)
     : 0;
+  const accessCode = p.accessCode || '—';
+  const directLink = `${window.location.origin}/#/survey/${p.id}`;
 
   function handleCloseAndSnapshot() {
     closePulse(p.id);
     openSnapshot(p.id);
+  }
+
+  function copyLink() {
+    navigator.clipboard.writeText(directLink);
+  }
+
+  function copyCode() {
+    navigator.clipboard.writeText(accessCode);
   }
 
   return (
@@ -45,9 +54,31 @@ export function PrivateStatus() {
         <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
           {p.name}
         </h2>
-        <p className="text-xs sm:text-sm text-slate-500 mt-1.5 font-medium">
+        <p className="text-xs sm:text-sm text-slate-500 mt-1.5 font-medium mb-3">
           {totalInvited} participants invited by email
         </p>
+
+        <div className="flex items-center justify-center gap-3">
+          <div className="inline-flex items-center gap-1.5 bg-indigo-50 border border-indigo-200/80 px-3 py-1 rounded-xl text-xs">
+            <span className="text-slate-500 font-medium">Session PIN:</span>
+            <button
+              type="button"
+              onClick={copyCode}
+              title="Click to copy PIN"
+              className="font-mono font-bold text-indigo-700 hover:text-indigo-900 cursor-pointer"
+            >
+              {accessCode} 📋
+            </button>
+          </div>
+
+          <button
+            type="button"
+            onClick={copyLink}
+            className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 bg-white border border-slate-200 hover:border-slate-300 px-3 py-1 rounded-xl transition-all shadow-2xs cursor-pointer"
+          >
+            🔗 Copy Direct Link
+          </button>
+        </div>
       </div>
 
       {/* Progress Card */}
@@ -69,9 +100,6 @@ export function PrivateStatus() {
 
         {/* Actions */}
         <div className="flex flex-wrap items-center justify-center gap-3">
-          <Button variant="ghost" onClick={simulatePrivateResponses}>
-            ⚡ Simulate Responses
-          </Button>
           <Button
             variant="primary"
             disabled={p.responses.length === 0}

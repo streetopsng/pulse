@@ -1,10 +1,21 @@
+import { useState } from 'react';
 import { Stepper } from '../common/Stepper';
 import { Button } from '../common/Button';
 import { usePulse } from '../../context/PulseContext';
 
 export function DeployStep() {
   const { draft, deployPulse, openPreview, setHostScreen } = usePulse();
+  const [deploying, setDeploying] = useState(false);
   const inviteCount = draft.invitedEmployees?.length || 0;
+
+  async function handleDeploy() {
+    setDeploying(true);
+    try {
+      await deployPulse();
+    } finally {
+      setDeploying(false);
+    }
+  }
 
   return (
     <div className="max-w-2xl mx-auto px-4 sm:px-8 py-8 sm:py-12">
@@ -34,8 +45,8 @@ export function DeployStep() {
               <span className="text-sm font-medium text-slate-500">Target Audience</span>
               <span className="text-sm font-semibold text-slate-900">
                 {inviteCount > 0
-                  ? `${inviteCount} specified recipient${inviteCount === 1 ? '' : 's'}`
-                  : 'Open Access (Anyone with Link or Code)'}
+                  ? `${inviteCount} recipient${inviteCount === 1 ? '' : 's'} (Brevo Email Dispatch)`
+                  : 'Open Access (Anyone with Link or PIN)'}
               </span>
             </div>
 
@@ -60,8 +71,17 @@ export function DeployStep() {
 
       {/* Actions */}
       <div className="flex flex-wrap items-center gap-3 pt-2">
-        <Button variant="primary" size="lg" onClick={deployPulse}>
-          {draft.delivery === 'live' ? 'Launch Live Session →' : 'Publish & Activate Pulse →'}
+        <Button
+          variant="primary"
+          size="lg"
+          disabled={deploying}
+          onClick={handleDeploy}
+        >
+          {deploying
+            ? 'Dispatching via Brevo...'
+            : draft.delivery === 'live'
+            ? 'Launch Live Session →'
+            : 'Publish & Send Brevo Invites →'}
         </Button>
         <Button variant="ghost" onClick={openPreview}>
           Preview as Employee

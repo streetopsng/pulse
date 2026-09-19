@@ -1,5 +1,6 @@
 import { SurveyContainer } from '../layout/SurveyContainer';
 import { EntryScreen } from './screens/EntryScreen';
+import { JoinScreen } from './screens/JoinScreen';
 import { InviteScreen } from './screens/InviteScreen';
 import { VerifyEmailScreen } from './screens/VerifyEmailScreen';
 import { InstructionsScreen } from './screens/InstructionsScreen';
@@ -20,6 +21,7 @@ export function EmployeeView() {
   return (
     <SurveyContainer badgeText={badgeText}>
       {empScreen === 'entry' && <EntryScreen />}
+      {empScreen === 'join' && <JoinScreen />}
       {empScreen === 'invite' && <InviteScreen />}
       {empScreen === 'verify-email' && <VerifyEmailScreen />}
       {(empScreen === 'instructions' || empScreen === 'welcome') && <InstructionsScreen />}

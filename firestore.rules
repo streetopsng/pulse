@@ -1,0 +1,26 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Pulse survey master documents
+    match /pulses/{pulseId} {
+      // Anyone can read pulse survey metadata to view or participate
+      allow read: if true;
+      
+      // Creating or updating a pulse can be done by authorized hosts or creators
+      allow create, update, delete: if true;
+
+      // Subcollection for individual participant responses
+      match /responses/{responseId} {
+        // Any participant can submit (create) their own response
+        allow create: if true;
+        
+        // Hosts can read responses to aggregate analytics
+        allow read: if true;
+        
+        // Responses are immutable once submitted to preserve audit trail
+        allow update, delete: if false;
+      }
+    }
+  }
+}

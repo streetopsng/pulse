@@ -1,5 +1,4 @@
 import { Button } from '../common/Button';
-import { Card } from '../common/Card';
 import { PeopleIcon, ClipboardIcon, BoltIcon, CalendarIcon } from '../common/Icons';
 import { computeSnapshot } from '../../utils/analytics';
 import { usePulse } from '../../context/PulseContext';
@@ -9,8 +8,8 @@ export function LiveSession() {
     activePulse,
     nextLiveQuestion,
     endLivePulse,
-    simulateLiveJoins,
     setHostScreen,
+    showToast,
   } = usePulse();
 
   if (!activePulse) {
@@ -32,6 +31,18 @@ export function LiveSession() {
   const progressPct = ((p.liveQIndex + 1) / p.questions.length) * 100;
   const snap = computeSnapshot(p);
   const pq = snap.perQuestion[p.liveQIndex];
+  const accessCode = p.accessCode || '—';
+  const directLink = `${window.location.origin}/#/survey/${p.id}`;
+
+  function copyLink() {
+    navigator.clipboard.writeText(directLink);
+    showToast('Direct survey link copied to clipboard');
+  }
+
+  function copyCode() {
+    navigator.clipboard.writeText(accessCode);
+    showToast('Session PIN copied to clipboard');
+  }
 
   function renderLiveAggregates() {
     if (!pq || p.responses.length === 0) {
@@ -41,7 +52,7 @@ export function LiveSession() {
             Waiting for live participant responses…
           </p>
           <p className="text-xs text-ink-faint">
-            Employees have been invited by email. You can simulate incoming responses below.
+            Participants can join using the session PIN or direct link above. Responses update in real time.
           </p>
         </div>
       );
@@ -137,8 +148,26 @@ export function LiveSession() {
             </span>
           </div>
 
-          <div className="text-xs font-medium text-slate-500">
-            Invited: <span className="font-semibold text-slate-900">{totalInvited} employees</span>
+          <div className="flex items-center gap-3">
+            <div className="inline-flex items-center gap-2 bg-indigo-50 border border-indigo-200/80 px-3 py-1 rounded-xl text-xs">
+              <span className="text-slate-500 font-medium">Session PIN:</span>
+              <button
+                type="button"
+                onClick={copyCode}
+                title="Click to copy PIN"
+                className="font-mono font-bold text-indigo-700 hover:text-indigo-900 cursor-pointer"
+              >
+                {accessCode} 📋
+              </button>
+            </div>
+
+            <button
+              type="button"
+              onClick={copyLink}
+              className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 bg-white border border-slate-200 hover:border-slate-300 px-3 py-1 rounded-xl transition-all shadow-2xs cursor-pointer"
+            >
+              🔗 Copy Direct Link
+            </button>
           </div>
         </div>
 
@@ -207,22 +236,17 @@ export function LiveSession() {
         </div>
 
         {/* Controls */}
-        <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-100">
-          <Button variant="ghost" onClick={simulateLiveJoins}>
-            ⚡ Simulate Responses
+        <div className="flex flex-wrap items-center justify-end gap-2.5 pt-2 border-t border-slate-100">
+          <Button variant="ghost" onClick={endLivePulse}>
+            End Pulse &amp; View Snapshot
           </Button>
-          <div className="flex items-center gap-2.5">
-            <Button variant="ghost" onClick={endLivePulse}>
-              End Pulse &amp; View Snapshot
-            </Button>
-            <Button
-              variant="primary"
-              disabled={p.liveQIndex >= p.questions.length - 1}
-              onClick={nextLiveQuestion}
-            >
-              Next Question →
-            </Button>
-          </div>
+          <Button
+            variant="primary"
+            disabled={p.liveQIndex >= p.questions.length - 1}
+            onClick={nextLiveQuestion}
+          >
+            Next Question →
+          </Button>
         </div>
       </div>
 

@@ -7,8 +7,6 @@ export function VerifyEmailScreen() {
 
   if (!activePulse) return null;
 
-  const hintEmail = activePulse.invitedEmployees?.[0]?.email || 'alex.kim@gummygum.com';
-
   function handleSubmit(e) {
     e.preventDefault();
     empEmailSubmit();
@@ -58,14 +56,7 @@ export function VerifyEmailScreen() {
       </form>
 
       <p className="text-xs text-slate-400 font-medium mt-4">
-        Demo test email:{' '}
-        <button
-          type="button"
-          onClick={() => setEmailInput(hintEmail)}
-          className="font-semibold text-indigo-600 underline cursor-pointer hover:text-indigo-800 transition-colors"
-        >
-          {hintEmail}
-        </button>
+        Your email is used to confirm survey access and maintain data integrity.
       </p>
     </div>
   );

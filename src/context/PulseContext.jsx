@@ -1,14 +1,17 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { TEMPLATES, cloneQuestions, createQuestion } from '../constants/templates';
-import { DIRECTORY, fakeRespondentAnswers } from '../constants/directory';
 import { isFirebaseConfigured } from '../config/firebase';
 import {
   subscribeToPulses,
+  subscribeToResponses,
+  fetchPulseById,
+  fetchPulseByCode,
   savePulseToFirebase,
   submitResponseToFirebase,
   updatePulseStatusInFirebase,
   deletePulseFromFirebase,
 } from '../services/pulseFirebaseService';
+import { sendPulseInvitations } from '../services/emailService';
 
 const PulseContext = createContext(null);
 
@@ -145,6 +148,60 @@ export function PulseProvider({ children }) {
 
     return () => unsubscribe();
   }, []);
+
+  // Real-time subcollection responses sync for active pulse
+  useEffect(() => {
+    if (!isFirebaseConfigured || !activePulseId) return;
+
+    const unsubscribe = subscribeToResponses(activePulseId, (subResponses) => {
+      if (subResponses && subResponses.length > 0) {
+        setPulses((prev) =>
+          prev.map((p) => (p.id === activePulseId ? { ...p, responses: subResponses } : p))
+        );
+      }
+    });
+
+    return () => unsubscribe();
+  }, [activePulseId]);
+
+  const loadPulseById = useCallback(
+    async (pulseId) => {
+      if (!pulseId) return null;
+      const existing = pulses.find((p) => p.id === pulseId);
+      if (existing) {
+        setActivePulseId(existing.id);
+        return existing;
+      }
+      const fetched = await fetchPulseById(pulseId);
+      if (fetched) {
+        setPulses((prev) => [fetched, ...prev.filter((p) => p.id !== fetched.id)]);
+        setActivePulseId(fetched.id);
+        return fetched;
+      }
+      return null;
+    },
+    [pulses]
+  );
+
+  const loadPulseByCode = useCallback(
+    async (code) => {
+      if (!code) return null;
+      const clean = code.toString().trim();
+      const existing = pulses.find((p) => p.accessCode === clean);
+      if (existing) {
+        setActivePulseId(existing.id);
+        return existing;
+      }
+      const fetched = await fetchPulseByCode(clean);
+      if (fetched) {
+        setPulses((prev) => [fetched, ...prev.filter((p) => p.id !== fetched.id)]);
+        setActivePulseId(fetched.id);
+        return fetched;
+      }
+      return null;
+    },
+    [pulses]
+  );
 
   function showToast(msg) {
     setToastMsg(msg);
@@ -367,8 +424,10 @@ export function PulseProvider({ children }) {
 
   function deployPulse() {
     const id = 'p_' + Math.random().toString(36).slice(2, 9);
+    const accessCode = Math.floor(100000 + Math.random() * 900000).toString();
     const newPulse = {
       id,
+      accessCode,
       name: draft.name.trim() || 'Untitled Pulse',
       description: draft.description.trim(),
       template: draft.template,
@@ -385,14 +444,28 @@ export function PulseProvider({ children }) {
     setPulses((prev) => [newPulse, ...prev]);
     setActivePulseId(id);
     setHostScreen(draft.delivery === 'live' ? 'live-session' : 'private-status');
+
     savePulseToFirebase(newPulse).catch((err) =>
       console.warn('Firebase save fallback:', err)
     );
-    showToast(
-      draft.delivery === 'live'
-        ? 'Live pulse started — invites sent by email'
-        : `Pulse sent to ${draft.invitedEmployees.length} people by email`
-    );
+
+    // Trigger email dispatch via Brevo (or local simulation with deep link)
+    const invitees = draft.invitedEmployees || [];
+    if (invitees.length > 0) {
+      sendPulseInvitations({ pulse: newPulse, recipients: invitees })
+        .then((result) => {
+          if (result.mode === 'brevo_serverless' || result.mode === 'brevo_client_direct') {
+            showToast(`Invites sent to ${invitees.length} participants via Brevo`);
+          } else {
+            showToast(`Pulse launched · PIN: ${accessCode} · ${invitees.length} invited`);
+          }
+        })
+        .catch((_err) => {
+          showToast(`Pulse launched · PIN: ${accessCode}`);
+        });
+    } else {
+      showToast(`Pulse launched · Open Access · PIN: ${accessCode}`);
+    }
   }
 
   function nextLiveQuestion() {
@@ -412,56 +485,6 @@ export function PulseProvider({ children }) {
       prev.map((p) => (p.id === activePulse.id ? { ...p, status: 'completed' } : p))
     );
     openSnapshot(activePulse.id);
-  }
-
-  function simulateLiveJoins() {
-    if (!activePulse) return;
-    const target = activePulse.invitedEmployees?.length || 10;
-    setPulses((prev) => {
-      const current = prev.find((p) => p.id === activePulse.id);
-      if (!current || current.responses.length >= target) return prev;
-      const batch = Math.ceil(target / 6);
-      const added = [];
-      for (let i = 0; i < batch && current.responses.length + added.length < target; i++) {
-        added.push({
-          id: 'r_' + Math.random().toString(36).slice(2, 9),
-          answers: fakeRespondentAnswers(current.questions),
-          isReal: false,
-          submittedAt: new Date().toISOString(),
-        });
-      }
-      return prev.map((p) =>
-        p.id === current.id ? { ...p, responses: [...p.responses, ...added] } : p
-      );
-    });
-    showToast('Simulated incoming live responses');
-  }
-
-  function simulatePrivateResponses() {
-    if (!activePulse) return;
-    const target = activePulse.invitedEmployees?.length || 10;
-    setPulses((prev) => {
-      const current = prev.find((p) => p.id === activePulse.id);
-      if (!current || current.responses.length >= target) return prev;
-      const batch = Math.ceil(target / 6);
-      const added = [];
-      for (let i = 0; i < batch && current.responses.length + added.length < target; i++) {
-        added.push({
-          id: 'r_' + Math.random().toString(36).slice(2, 9),
-          answers: fakeRespondentAnswers(current.questions),
-          isReal: false,
-          submittedAt: new Date().toISOString(),
-        });
-      }
-      const newResponses = [...current.responses, ...added];
-      const newStatus = newResponses.length >= target ? 'completed' : current.status;
-      return prev.map((p) =>
-        p.id === current.id
-          ? { ...p, responses: newResponses, status: newStatus }
-          : p
-      );
-    });
-    showToast('Simulated incoming private responses');
   }
 
   // Employee Flow Actions
@@ -600,6 +623,8 @@ export function PulseProvider({ children }) {
         activePulse,
         activePulseId,
         setActivePulseId,
+        loadPulseById,
+        loadPulseByCode,
         snapshotPulse,
         snapshotPulseId,
         topView,
@@ -635,8 +660,6 @@ export function PulseProvider({ children }) {
         deployPulse,
         nextLiveQuestion,
         endLivePulse,
-        simulateLiveJoins,
-        simulatePrivateResponses,
         // Employee state & actions
         empScreen,
         setEmpScreen,

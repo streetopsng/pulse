@@ -1,9 +1,8 @@
-import { Link, useLocation } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { usePulse } from '../../context/PulseContext';
 
 export function TopBar() {
-  const { hostScreen, setHostScreen, startCreate } = usePulse();
-  const location = useLocation();
+  const { hostScreen, setHostScreen } = usePulse();
 
   return (
     <header className="sticky top-0 z-30 bg-white/85 backdrop-blur-md border-b border-slate-200/80 px-4 sm:px-8 py-3.5 flex items-center justify-between gap-4 transition-all">
@@ -51,7 +50,6 @@ export function TopBar() {
 
       {/* Right Controls: Host User Pill */}
       <div className="flex items-center gap-3">
-        {/* Host User Pill */}
         <div className="flex items-center gap-2.5">
           <div className="relative">
             <div className="w-8 h-8 rounded-full bg-purple-100 border border-purple-200 flex items-center justify-center font-bold text-xs text-purple-700 shadow-2xs">
@@ -60,8 +58,12 @@ export function TopBar() {
             <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-white" />
           </div>
           <div className="hidden sm:flex flex-col text-left leading-tight">
-            <span className="text-xs font-semibold text-slate-900">Lead Host</span>
-            <span className="text-[10px] font-medium text-slate-400">Team Admin</span>
+            <span className="text-xs font-semibold text-slate-900">
+              Lead Host
+            </span>
+            <span className="text-[10px] font-medium text-slate-400">
+              Team Admin
+            </span>
           </div>
         </div>
       </div>
