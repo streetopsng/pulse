@@ -1,8 +1,11 @@
 import { Link } from 'react-router-dom';
 import { usePulse } from '../../context/PulseContext';
+import { useGummyGum } from '../../context/GummyGumContext';
+import { closeGummyGumSession } from '../../lib/gummygumSession';
 
 export function TopBar() {
   const { hostScreen, setHostScreen } = usePulse();
+  const { ggSession } = useGummyGum();
 
   return (
     <header className="sticky top-0 z-30 bg-white/85 backdrop-blur-md border-b border-slate-200/80 px-4 sm:px-8 py-3.5 flex items-center justify-between gap-4 transition-all">
@@ -50,6 +53,15 @@ export function TopBar() {
 
       {/* Right Controls: Host User Pill */}
       <div className="flex items-center gap-3">
+        {ggSession?.isHost && (
+          <button
+            type="button"
+            onClick={() => closeGummyGumSession()}
+            className="hidden sm:inline-flex items-center px-3.5 py-1.5 rounded-full bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold shadow-sm transition-all cursor-pointer"
+          >
+            Close Session &amp; Return to GummyGum
+          </button>
+        )}
         <div className="flex items-center gap-2.5">
           <div className="relative">
             <div className="w-8 h-8 rounded-full bg-purple-100 border border-purple-200 flex items-center justify-center font-bold text-xs text-purple-700 shadow-2xs">
