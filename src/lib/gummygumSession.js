@@ -16,14 +16,7 @@ export function getGummyGumSession() {
   }
 }
 
-export async function resolveGummyGumLaunch() {
-  const params = new URLSearchParams(window.location.search);
-  const ggt = params.get('ggt');
-
-  if (!ggt) {
-    return getGummyGumSession();
-  }
-
+async function verifyLaunchTokenOnce(ggt) {
   try {
     const res = await fetch(`${API_URL}/api/gummygum/launch/verify`, {
       method: 'POST',
@@ -32,40 +25,57 @@ export async function resolveGummyGumLaunch() {
     });
     const body = await res.json();
     if (!res.ok || !body.success) return null;
-
-    const hubUrl =
-      body.data.hubUrl ||
-      (typeof document !== 'undefined' && document.referrer
-        ? new URL(document.referrer).origin
-        : 'https://gummygum.app');
-
-    const session = {
-      sessionId: body.data.sessionId,
-      experienceId: body.data.experienceId,
-      isGuest: body.data.isGuest,
-      player: body.data.player,
-      reportToken: body.data.reportToken,
-      roomCode: body.data.roomCode ?? null,
-      isHost: Boolean(body.data.isHost),
-      // Full survey setup assembled in GummyGum before launch (see
-      // PulseContext's deployPulseFromGummyGum) — null for a host who
-      // launched before this existed, or for any non-host session.
-      config: body.data.config ?? null,
-      hubUrl,
-      round: 1,
-      reported: false,
-    };
-    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(session));
-
-    params.delete('ggt');
-    const query = params.toString();
-    window.history.replaceState({}, '', window.location.pathname + (query ? `?${query}` : '') + window.location.hash);
-
-    return session;
+    return body;
   } catch (err) {
     console.error('GummyGum launch verify failed', err);
     return null;
   }
+}
+
+export async function resolveGummyGumLaunch() {
+  const params = new URLSearchParams(window.location.search);
+  const ggt = params.get('ggt');
+
+  if (!ggt) {
+    return getGummyGumSession();
+  }
+
+  let body = await verifyLaunchTokenOnce(ggt);
+  if (!body) {
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+    body = await verifyLaunchTokenOnce(ggt);
+  }
+  if (!body) return null;
+
+  const hubUrl =
+    body.data.hubUrl ||
+    (typeof document !== 'undefined' && document.referrer
+      ? new URL(document.referrer).origin
+      : 'https://gummygum.app');
+
+  const session = {
+    sessionId: body.data.sessionId,
+    experienceId: body.data.experienceId,
+    isGuest: body.data.isGuest,
+    player: body.data.player,
+    reportToken: body.data.reportToken,
+    roomCode: body.data.roomCode ?? null,
+    isHost: Boolean(body.data.isHost),
+    // Full survey setup assembled in GummyGum before launch (see
+    // PulseContext's deployPulseFromGummyGum) — null for a host who
+    // launched before this existed, or for any non-host session.
+    config: body.data.config ?? null,
+    hubUrl,
+    round: 1,
+    reported: false,
+  };
+  sessionStorage.setItem(STORAGE_KEY, JSON.stringify(session));
+
+  params.delete('ggt');
+  const query = params.toString();
+  window.history.replaceState({}, '', window.location.pathname + (query ? `?${query}` : '') + window.location.hash);
+
+  return session;
 }
 
 export async function reportGummyGumResult(report) {
