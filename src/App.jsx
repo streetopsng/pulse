@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import {
   HashRouter,
   Routes,
@@ -23,15 +23,26 @@ import { BgDeco } from './components/common/BgDeco';
  */
 function HostLayout() {
   const { ggSession } = useGummyGum();
-  const { hostScreen, setHostScreen } = usePulse();
+  const { hostScreen, setHostScreen, deployPulseFromGummyGum } = usePulse();
+  const deployedRef = useRef(false);
 
-  // Skip the marketing splash for a host GummyGum already authenticated —
-  // land straight on their pulse list.
+  // A host GummyGum already authenticated skips the marketing splash. If
+  // they built their survey entirely in GummyGum's setup modal (the normal
+  // path now), deploy straight from that config and land on the live
+  // session / private status screen — never home, welcome, or the native
+  // builder. Only a host with no config (shouldn't normally happen once
+  // this is live) falls back to the old "land on home, use native builder"
+  // behavior.
   useEffect(() => {
-    if (ggSession?.isHost && hostScreen === 'welcome') {
+    if (!ggSession?.isHost || hostScreen !== 'welcome') return;
+    if (ggSession.config) {
+      if (deployedRef.current) return;
+      deployedRef.current = true;
+      deployPulseFromGummyGum(ggSession.config);
+    } else {
       setHostScreen('home');
     }
-  }, [ggSession, hostScreen, setHostScreen]);
+  }, [ggSession, hostScreen, setHostScreen, deployPulseFromGummyGum]);
 
   return (
     <div className="relative min-h-screen flex flex-col z-10">

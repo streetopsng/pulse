@@ -472,6 +472,75 @@ export function PulseProvider({ children }) {
     }
   }
 
+  // Deploys straight from a fully-assembled config object (the survey a
+  // host built entirely inside GummyGum's PulseSetupModal) instead of the
+  // internal `draft` state — same deploy semantics as deployPulse(), just
+  // reading from `config` so the native builder chain can be skipped
+  // entirely. See src/App.jsx's HostLayout for the caller.
+  function deployPulseFromGummyGum(config) {
+    if (!config) return null;
+    const ggSession = getGummyGumSession();
+    const accessCode =
+      (ggSession?.isHost && ggSession.roomCode) ||
+      Math.floor(100000 + Math.random() * 900000).toString();
+
+    // A host who reconnects to the same GummyGum room (closed tab, resumed
+    // from the hub, etc.) mints a fresh launch token and re-runs this on
+    // mount — reuse the pulse already tied to that room's PIN instead of
+    // creating a duplicate every time.
+    const existing = pulses.find((p) => p.accessCode === accessCode);
+    if (existing) {
+      setActivePulseId(existing.id);
+      setHostScreen(existing.delivery === 'live' ? 'live-session' : 'private-status');
+      return existing;
+    }
+
+    const id = 'p_' + Math.random().toString(36).slice(2, 9);
+    const delivery = config.delivery === 'live' ? 'live' : 'private';
+    const newPulse = {
+      id,
+      accessCode,
+      name: (config.name || '').trim() || 'Untitled Pulse',
+      description: (config.description || '').trim(),
+      template: config.template || null,
+      questions: cloneQuestions(config.questions || []),
+      delivery,
+      invitedEmployees: (config.invitedEmployees || []).map((p) => ({ ...p })),
+      privacy: config.privacy === 'identified' ? 'identified' : 'anonymous',
+      status: delivery === 'live' ? 'live' : 'collecting',
+      createdDate: 'Today',
+      liveQIndex: 0,
+      responses: [],
+    };
+
+    setPulses((prev) => [newPulse, ...prev]);
+    setActivePulseId(id);
+    setHostScreen(delivery === 'live' ? 'live-session' : 'private-status');
+
+    savePulseToFirebase(newPulse).catch((err) =>
+      console.warn('Firebase save fallback:', err)
+    );
+
+    const invitees = config.invitedEmployees || [];
+    if (invitees.length > 0) {
+      sendPulseInvitations({ pulse: newPulse, recipients: invitees })
+        .then((result) => {
+          if (result.mode === 'brevo_serverless' || result.mode === 'brevo_client_direct') {
+            showToast(`Invites sent to ${invitees.length} participants via Brevo`);
+          } else {
+            showToast(`Pulse launched · PIN: ${accessCode} · ${invitees.length} invited`);
+          }
+        })
+        .catch((_err) => {
+          showToast(`Pulse launched · PIN: ${accessCode}`);
+        });
+    } else {
+      showToast(`Pulse launched · Open Access · PIN: ${accessCode}`);
+    }
+
+    return newPulse;
+  }
+
   function nextLiveQuestion() {
     if (!activePulse) return;
     setPulses((prev) =>
@@ -664,6 +733,7 @@ export function PulseProvider({ children }) {
         editOption,
         removeOption,
         deployPulse,
+        deployPulseFromGummyGum,
         nextLiveQuestion,
         endLivePulse,
         // Employee state & actions

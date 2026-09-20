@@ -47,6 +47,10 @@ export async function resolveGummyGumLaunch() {
       reportToken: body.data.reportToken,
       roomCode: body.data.roomCode ?? null,
       isHost: Boolean(body.data.isHost),
+      // Full survey setup assembled in GummyGum before launch (see
+      // PulseContext's deployPulseFromGummyGum) — null for a host who
+      // launched before this existed, or for any non-host session.
+      config: body.data.config ?? null,
       hubUrl,
       round: 1,
       reported: false,
