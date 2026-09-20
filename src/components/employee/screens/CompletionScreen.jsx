@@ -1,8 +1,22 @@
+import { useState } from 'react';
 import { Button } from '../../common/Button';
 import { usePulse } from '../../../context/PulseContext';
+import { useGummyGum } from '../../../context/GummyGumContext';
 
 export function CompletionScreen() {
   const { activePulse, setEmpScreen } = usePulse();
+  const { ggSession } = useGummyGum();
+  const [showThanksModal, setShowThanksModal] = useState(false);
+  const isGummyGumParticipant = ggSession && !ggSession.isHost;
+
+  function handleFinish() {
+    if (isGummyGumParticipant) {
+      window.close();
+      setTimeout(() => setShowThanksModal(true), 400);
+      return;
+    }
+    setEmpScreen('already');
+  }
 
   return (
     <div className="text-center py-6 sm:py-8 max-w-sm mx-auto">
@@ -33,11 +47,20 @@ export function CompletionScreen() {
         <Button
           variant="primary"
           size="sm"
-          onClick={() => setEmpScreen('already')}
+          onClick={handleFinish}
         >
-          Finish Session
+          {isGummyGumParticipant ? 'Done — You can close this tab' : 'Finish Session'}
         </Button>
       </div>
+
+      {showThanksModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm px-5">
+          <div className="bg-white border border-slate-200 rounded-2xl p-7 max-w-sm w-full text-center shadow-xl">
+            <h3 className="font-bold text-lg text-slate-900 mb-2">Thanks for participating!</h3>
+            <p className="text-slate-500 text-sm">You can close this tab now.</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

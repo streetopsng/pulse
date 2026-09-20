@@ -12,6 +12,7 @@ import {
   deletePulseFromFirebase,
 } from '../services/pulseFirebaseService';
 import { sendPulseInvitations } from '../services/emailService';
+import { getGummyGumSession } from '../lib/gummygumSession';
 
 const PulseContext = createContext(null);
 
@@ -424,7 +425,10 @@ export function PulseProvider({ children }) {
 
   function deployPulse() {
     const id = 'p_' + Math.random().toString(36).slice(2, 9);
-    const accessCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const ggSession = getGummyGumSession();
+    const accessCode =
+      (ggSession?.isHost && ggSession.roomCode) ||
+      Math.floor(100000 + Math.random() * 900000).toString();
     const newPulse = {
       id,
       accessCode,
@@ -496,8 +500,10 @@ export function PulseProvider({ children }) {
       return;
     }
     const invited = activePulse.invitedEmployees || [];
-    if (invited.length === 0) {
-      // Open Access Mode - any employee can participate
+    const ggSession = getGummyGumSession();
+    const ggEmail = ggSession?.player?.email?.toLowerCase();
+    if (invited.length === 0 || (ggEmail && typed === ggEmail)) {
+      // Open Access Mode, or an identity GummyGum already verified for this room
       setVerifiedEmail(typed);
       setEmailError(null);
       setEmpScreen('instructions');
@@ -668,6 +674,7 @@ export function PulseProvider({ children }) {
         emailError,
         setEmailError,
         verifiedEmail,
+        setVerifiedEmail,
         empEmailSubmit,
         empQIndex,
         empAnswers,
