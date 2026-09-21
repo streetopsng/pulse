@@ -521,22 +521,15 @@ export function PulseProvider({ children }) {
       console.warn('Firebase save fallback:', err)
     );
 
-    const invitees = config.invitedEmployees || [];
-    if (invitees.length > 0) {
-      sendPulseInvitations({ pulse: newPulse, recipients: invitees })
-        .then((result) => {
-          if (result.mode === 'brevo_serverless' || result.mode === 'brevo_client_direct') {
-            showToast(`Invites sent to ${invitees.length} participants via Brevo`);
-          } else {
-            showToast(`Pulse launched · PIN: ${accessCode} · ${invitees.length} invited`);
-          }
-        })
-        .catch((_err) => {
-          showToast(`Pulse launched · PIN: ${accessCode}`);
-        });
-    } else {
-      showToast(`Pulse launched · Open Access · PIN: ${accessCode}`);
-    }
+    // GummyGum already emailed these people a personalized, identity-aware
+    // invite link when the host launched — sending Pulse's own native Brevo
+    // invite on top would give them a second, non-GummyGum-aware link.
+    const inviteCount = (config.invitedEmployees || []).length;
+    showToast(
+      inviteCount > 0
+        ? `Pulse launched · PIN: ${accessCode} · ${inviteCount} invited`
+        : `Pulse launched · Open Access · PIN: ${accessCode}`
+    );
 
     return newPulse;
   }
