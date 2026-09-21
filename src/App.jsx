@@ -142,7 +142,17 @@ function EmployeeLayout() {
         }
       });
     } else if (ggSession && !ggSession.isHost && ggSession.roomCode) {
-      loadPulseByCode(ggSession.roomCode).then((found) => {
+      // The host's tab may still be writing the pulse to Firestore when a
+      // fast participant's invite click lands — retry briefly before
+      // treating it as genuinely missing.
+      const MAX_ATTEMPTS = 6;
+      const RETRY_DELAY_MS = 1500;
+      (async () => {
+        let found = null;
+        for (let attempt = 0; attempt < MAX_ATTEMPTS && !found; attempt++) {
+          found = await loadPulseByCode(ggSession.roomCode);
+          if (!found) await new Promise((r) => setTimeout(r, RETRY_DELAY_MS));
+        }
         if (found) {
           if (ggSession.player?.email) {
             setEmailInput(ggSession.player.email);
@@ -152,7 +162,7 @@ function EmployeeLayout() {
         } else {
           setEmpScreen('entry');
         }
-      });
+      })();
     } else if (!activePulse) {
       setEmpScreen('entry');
     }
