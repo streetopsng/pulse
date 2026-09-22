@@ -57,7 +57,7 @@ export function TopBar() {
           <button
             type="button"
             onClick={() => closeGummyGumSession()}
-            className="hidden sm:inline-flex items-center px-3.5 py-1.5 rounded-full bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold shadow-sm transition-all cursor-pointer"
+            className="inline-flex items-center px-3.5 py-1.5 rounded-full bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold shadow-sm transition-all cursor-pointer"
           >
             Close Session &amp; Return to GummyGum
           </button>

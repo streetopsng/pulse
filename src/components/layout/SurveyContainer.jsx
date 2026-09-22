@@ -1,3 +1,5 @@
+import { returnToGummyGum } from '../../lib/gummygumSession';
+
 export function SurveyContainer({ children, badgeText = 'PARTICIPANT PORTAL' }) {
   return (
     <div className="min-h-screen flex flex-col relative z-10">
@@ -13,9 +15,19 @@ export function SurveyContainer({ children, badgeText = 'PARTICIPANT PORTAL' }) 
           </span>
         </div>
 
-        <div className="flex items-center gap-2 text-xs font-semibold text-slate-600 bg-slate-50 border border-slate-200 px-3 py-1 rounded-full shadow-2xs">
-          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-          <span>Encrypted Session</span>
+        <div className="flex items-center gap-2.5 sm:gap-3">
+          <button
+            type="button"
+            onClick={() => returnToGummyGum()}
+            className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 hover:bg-slate-200 border border-slate-200 text-xs font-semibold text-slate-700 transition-all cursor-pointer shadow-2xs"
+            title="Back to GummyGum"
+          >
+            <span>← Back to GummyGum</span>
+          </button>
+          <div className="flex items-center gap-2 text-xs font-semibold text-slate-600 bg-slate-50 border border-slate-200 px-3 py-1 rounded-full shadow-2xs hidden xs:flex">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span>Encrypted Session</span>
+          </div>
         </div>
       </header>
 
