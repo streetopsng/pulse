@@ -1,12 +1,20 @@
+import { useState } from 'react';
 import { Button } from '../../common/Button';
 import { usePulse } from '../../../context/PulseContext';
+import { GameRulesModal } from '../../common/GameRulesModal';
 
 export function InstructionsScreen() {
-  const { activePulse, empStart } = usePulse();
+  const { activePulse, empStart, empEmail } = usePulse();
+  const [showRules, setShowRules] = useState(false);
 
   if (!activePulse) return null;
 
   const mins = Math.max(1, Math.round(activePulse.questions.length * 0.4 * 10) / 10);
+
+  const handleConfirmRules = () => {
+    setShowRules(false);
+    empStart();
+  };
 
   return (
     <div className="text-center py-6 sm:py-10 max-w-xl mx-auto">
@@ -43,11 +51,18 @@ export function InstructionsScreen() {
           variant="primary"
           size="lg"
           className="w-full"
-          onClick={empStart}
+          onClick={() => setShowRules(true)}
         >
           Begin Survey →
         </Button>
       </div>
+
+      {showRules && (
+        <GameRulesModal
+          onConfirm={handleConfirmRules}
+          name={empEmail ? empEmail.split('@')[0] : ''}
+        />
+      )}
 
       {/* Privacy Notice */}
       <div className="inline-flex items-center gap-2 text-xs font-medium text-slate-600 bg-white px-3.5 py-1.5 rounded-full border border-slate-200 shadow-2xs">
