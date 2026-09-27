@@ -7,7 +7,7 @@ const STORAGE_KEY = 'gummygum_launch_session';
 
 export function getGummyGumSession() {
   if (typeof window === 'undefined') return null;
-  const stored = sessionStorage.getItem(STORAGE_KEY);
+  const stored = sessionStorage.getItem(STORAGE_KEY) || localStorage.getItem(STORAGE_KEY);
   if (!stored) return null;
   try {
     return JSON.parse(stored);
@@ -45,7 +45,17 @@ export async function resolveGummyGumLaunch() {
     await new Promise((resolve) => setTimeout(resolve, 1500));
     body = await verifyLaunchTokenOnce(ggt);
   }
-  if (!body) return null;
+
+  if (!body) {
+    const existing = getGummyGumSession();
+    if (existing) {
+      params.delete('ggt');
+      const query = params.toString();
+      window.history.replaceState({}, '', window.location.pathname + (query ? `?${query}` : '') + window.location.hash);
+      return existing;
+    }
+    return null;
+  }
 
   const hubUrl =
     body.data.hubUrl ||
@@ -71,6 +81,7 @@ export async function resolveGummyGumLaunch() {
     reported: false,
   };
   sessionStorage.setItem(STORAGE_KEY, JSON.stringify(session));
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(session));
 
   params.delete('ggt');
   const query = params.toString();
@@ -91,6 +102,7 @@ export async function reportGummyGumResult(report) {
     });
     session.reported = true;
     sessionStorage.setItem(STORAGE_KEY, JSON.stringify(session));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(session));
   } catch (err) {
     console.error('GummyGum result report failed', err);
   }
@@ -121,6 +133,7 @@ export async function closeGummyGumSession(finalReport) {
   } finally {
     const hub = session.hubUrl || 'https://gummygum.app';
     sessionStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(STORAGE_KEY);
     window.location.href = hub;
   }
 }
@@ -130,6 +143,7 @@ export function returnToGummyGum() {
   const session = getGummyGumSession();
   const hub = session?.hubUrl || 'https://gummygum.app';
   sessionStorage.removeItem(STORAGE_KEY);
+  localStorage.removeItem(STORAGE_KEY);
   window.location.href = hub;
 }
 
