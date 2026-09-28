@@ -473,20 +473,31 @@ export function PulseProvider({ children }) {
 
     // Trigger email dispatch via Brevo (or local simulation with deep link)
     const invitees = draft.invitedEmployees || [];
+    // GummyGum-launched hosts (even ones that fell back to the native
+    // builder) join via their own hub, not this PIN — never surface it.
+    const isFromGummyGum = Boolean(ggSession);
     if (invitees.length > 0) {
       sendPulseInvitations({ pulse: newPulse, recipients: invitees })
         .then((result) => {
           if (result.mode === 'brevo_serverless' || result.mode === 'brevo_client_direct') {
             showToast(`Invites sent to ${invitees.length} participants via Brevo`);
           } else {
-            showToast(`Pulse launched · PIN: ${accessCode} · ${invitees.length} invited`);
+            showToast(
+              isFromGummyGum
+                ? `Pulse launched · ${invitees.length} invited`
+                : `Pulse launched · PIN: ${accessCode} · ${invitees.length} invited`
+            );
           }
         })
         .catch((_err) => {
-          showToast(`Pulse launched · PIN: ${accessCode}`);
+          showToast(isFromGummyGum ? `Pulse launched` : `Pulse launched · PIN: ${accessCode}`);
         });
     } else {
-      showToast(`Pulse launched · Open Access · PIN: ${accessCode}`);
+      showToast(
+        isFromGummyGum
+          ? `Pulse launched · Open Access`
+          : `Pulse launched · Open Access · PIN: ${accessCode}`
+      );
     }
   }
 
