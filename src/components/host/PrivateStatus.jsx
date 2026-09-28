@@ -8,6 +8,7 @@ export function PrivateStatus() {
     closePulse,
     openSnapshot,
     setHostScreen,
+    isFromGummyGum,
   } = usePulse();
 
   if (!activePulse) {
@@ -59,17 +60,19 @@ export function PrivateStatus() {
         </p>
 
         <div className="flex items-center justify-center gap-3">
-          <div className="inline-flex items-center gap-1.5 bg-indigo-50 border border-indigo-200/80 px-3 py-1 rounded-xl text-xs">
-            <span className="text-slate-500 font-medium">Session PIN:</span>
-            <button
-              type="button"
-              onClick={copyCode}
-              title="Click to copy PIN"
-              className="font-mono font-bold text-indigo-700 hover:text-indigo-900 cursor-pointer"
-            >
-              {accessCode} 📋
-            </button>
-          </div>
+          {!isFromGummyGum && (
+            <div className="inline-flex items-center gap-1.5 bg-indigo-50 border border-indigo-200/80 px-3 py-1 rounded-xl text-xs">
+              <span className="text-slate-500 font-medium">Session PIN:</span>
+              <button
+                type="button"
+                onClick={copyCode}
+                title="Click to copy PIN"
+                className="font-mono font-bold text-indigo-700 hover:text-indigo-900 cursor-pointer"
+              >
+                {accessCode} 📋
+              </button>
+            </div>
+          )}
 
           <button
             type="button"
