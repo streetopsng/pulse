@@ -4,6 +4,7 @@ import { isFirebaseConfigured } from '../config/firebase';
 import {
   subscribeToPulses,
   subscribeToResponses,
+  subscribeToPulseDoc,
   fetchPulseById,
   fetchPulseByCode,
   savePulseToFirebase,
@@ -160,6 +161,23 @@ export function PulseProvider({ children }) {
           prev.map((p) => (p.id === activePulseId ? { ...p, responses: subResponses } : p))
         );
       }
+    });
+
+    return () => unsubscribe();
+  }, [activePulseId]);
+
+  // Detect the host ending or deleting the active pulse in real time so a
+  // connected participant mid-flow doesn't freeze on a stale screen.
+  useEffect(() => {
+    if (!isFirebaseConfigured || !activePulseId) return;
+
+    const unsubscribe = subscribeToPulseDoc(activePulseId, ({ exists, status }) => {
+      if (exists && status !== 'completed') return;
+      setEmpScreen((current) =>
+        current === 'completion' || current === 'already' || current === 'session-ended'
+          ? current
+          : 'session-ended'
+      );
     });
 
     return () => unsubscribe();
