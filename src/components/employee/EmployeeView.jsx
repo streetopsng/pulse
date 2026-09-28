@@ -7,6 +7,7 @@ import { InstructionsScreen } from './screens/InstructionsScreen';
 import { QuestionScreen } from './screens/QuestionScreen';
 import { CompletionScreen } from './screens/CompletionScreen';
 import { AlreadyScreen } from './screens/AlreadyScreen';
+import { SessionEndedScreen } from './screens/SessionEndedScreen';
 import { usePulse } from '../../context/PulseContext';
 
 export function EmployeeView() {
@@ -28,6 +29,7 @@ export function EmployeeView() {
       {empScreen === 'question' && <QuestionScreen />}
       {empScreen === 'completion' && <CompletionScreen />}
       {empScreen === 'already' && <AlreadyScreen />}
+      {empScreen === 'session-ended' && <SessionEndedScreen />}
     </SurveyContainer>
   );
 }

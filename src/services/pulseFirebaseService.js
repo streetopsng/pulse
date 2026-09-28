@@ -66,6 +66,28 @@ export function subscribeToResponses(pulseId, callback, onError) {
 }
 
 /**
+ * Subscribe to real-time updates for a single pulse document — lets a
+ * connected participant detect the host ending or deleting the session.
+ */
+export function subscribeToPulseDoc(pulseId, callback, onError) {
+  if (!isFirebaseConfigured || !db || !pulseId) {
+    return () => {};
+  }
+
+  const docRef = doc(db, COLLECTION_NAME, pulseId);
+  return onSnapshot(
+    docRef,
+    (snap) => {
+      callback({ exists: snap.exists(), status: snap.exists() ? snap.data().status : null });
+    },
+    (error) => {
+      console.error('Pulse doc onSnapshot error:', error);
+      if (onError) onError(error);
+    }
+  );
+}
+
+/**
  * Fetch a single pulse by ID
  */
 export async function fetchPulseById(pulseId) {
