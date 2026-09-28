@@ -527,8 +527,8 @@ export function PulseProvider({ children }) {
     const inviteCount = (config.invitedEmployees || []).length;
     showToast(
       inviteCount > 0
-        ? `Pulse launched · PIN: ${accessCode} · ${inviteCount} invited`
-        : `Pulse launched · Open Access · PIN: ${accessCode}`
+        ? `Pulse launched · ${inviteCount} invited`
+        : `Pulse launched · Open Access`
     );
 
     return newPulse;
@@ -757,6 +757,7 @@ export function PulseProvider({ children }) {
         previewAnswerMulti,
         previewNext,
         previewBack,
+        isFromGummyGum: Boolean(getGummyGumSession()),
       }}
     >
       {children}
