@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Button } from '../../common/Button';
+import { ArrowLeftIcon } from '../../common/Icons';
 import { usePulse } from '../../../context/PulseContext';
 
 export function JoinScreen() {
@@ -149,15 +150,15 @@ export function JoinScreen() {
         disabled={loading || digits.some((d) => d === '')}
         onClick={() => submitCode()}
       >
-        {loading ? 'Verifying PIN...' : 'Join Pulse Session →'}
+        {loading ? 'Verifying PIN...' : 'Join Pulse Session'}
       </Button>
 
       <button
         type="button"
         onClick={() => setEmpScreen('entry')}
-        className="mt-4 text-xs font-semibold text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+        className="mt-4 inline-flex items-center gap-1.5 text-xs font-semibold text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
       >
-        ← Back to Access Options
+        <ArrowLeftIcon /> Back to Access Options
       </button>
     </div>
   );

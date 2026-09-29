@@ -1,7 +1,7 @@
-import React from 'react';
 import { Button } from './Button';
+import { ArrowRightIcon, LightbulbIcon } from './Icons';
 
-export function GameRulesModal({ onConfirm, name }) {
+export function GameRulesModal({ onConfirm, name, anonymous = true }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs select-none animate-fadeIn">
       <div className="bg-white border-2 border-slate-200/80 rounded-[24px] p-6 sm:p-8 max-w-md w-full shadow-2xl flex flex-col max-h-[90vh] overflow-y-auto text-slate-900">
@@ -36,9 +36,13 @@ export function GameRulesModal({ onConfirm, name }) {
               2
             </div>
             <div className="text-left">
-              <div className="text-[13px] font-bold text-slate-900">Responses are 100% confidential</div>
+              <div className="text-[13px] font-bold text-slate-900">
+                {anonymous ? 'Responses are 100% confidential' : 'Responses are attributed to you'}
+              </div>
               <div className="text-[11.5px] text-slate-600 mt-0.5 leading-snug">
-                Individual responses are aggregated into collective trends so your feedback remains completely safe.
+                {anonymous
+                  ? 'Individual responses are aggregated into collective trends so your feedback remains completely safe.'
+                  : 'Your host will see your answers alongside your email, as well as the overall team trends.'}
               </div>
             </div>
           </div>
@@ -58,7 +62,7 @@ export function GameRulesModal({ onConfirm, name }) {
 
         {/* Tip Box */}
         <div className="p-3 bg-purple-50/70 border border-purple-200/80 rounded-xl text-left flex items-center gap-2.5 mb-6">
-          <span className="text-base shrink-0">💡</span>
+          <LightbulbIcon className="w-4 h-4 shrink-0 text-purple-600" />
           <span className="text-[11.5px] text-purple-900 font-medium leading-snug">
             <strong>Pro tip:</strong> Take your time — you can navigate back to adjust any response before final submission.
           </span>
@@ -70,7 +74,7 @@ export function GameRulesModal({ onConfirm, name }) {
           onClick={onConfirm}
           className="w-full py-3.5 text-sm sm:text-base font-bold rounded-xl cursor-pointer shadow-md bg-purple-600 hover:bg-purple-700 text-white"
         >
-          Got it, begin survey →
+          Got it, begin survey <ArrowRightIcon className="w-4 h-4 ml-2" />
         </Button>
       </div>
     </div>

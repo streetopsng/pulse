@@ -13,6 +13,12 @@ import {
 import { db, isFirebaseConfigured } from '../config/firebase';
 
 const COLLECTION_NAME = 'pulses';
+
+export const ENDED_STATUSES = ['completed', 'cancelled'];
+
+export function isPulseEnded(pulse) {
+  return Boolean(pulse) && ENDED_STATUSES.includes(pulse.status);
+}
 const SUBCOLLECTION_RESPONSES = 'responses';
 
 /**
@@ -133,8 +139,14 @@ export async function fetchPulseByCode(code) {
 
     if (snapshot.empty) return null;
 
-    const firstDoc = snapshot.docs[0];
-    return { id: firstDoc.id, ...firstDoc.data() };
+    // PINs can be reused across sessions, so prefer an open pulse, then the newest.
+    const matches = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+    matches.sort((a, b) => {
+      const endedDiff = Number(isPulseEnded(a)) - Number(isPulseEnded(b));
+      if (endedDiff !== 0) return endedDiff;
+      return (b.createdAt || '').localeCompare(a.createdAt || '');
+    });
+    return matches[0];
   } catch (error) {
     console.error('Failed to fetch pulse by code:', error);
     return null;
@@ -207,6 +219,18 @@ export async function updatePulseStatusInFirebase(pulseId, status) {
     await updateDoc(docRef, { status });
   } catch (error) {
     console.error('Failed to update pulse status in Firebase:', error);
+    throw error;
+  }
+}
+
+export async function updatePulseFieldsInFirebase(pulseId, fields) {
+  if (!isFirebaseConfigured || !db || !pulseId) return;
+
+  try {
+    const docRef = doc(db, COLLECTION_NAME, pulseId);
+    await updateDoc(docRef, fields);
+  } catch (error) {
+    console.error('Failed to update pulse in Firebase:', error);
     throw error;
   }
 }

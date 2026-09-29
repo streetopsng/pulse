@@ -23,9 +23,9 @@ export function ChoiceList({ options = [], value, onChange, multi = false }) {
               } ${isPicked ? 'border-purple-600 bg-purple-600 text-white' : 'border-slate-300 bg-white'}`}
             >
               {isPicked && (
-                <span className="text-[10px] font-bold select-none">
-                  ✓
-                </span>
+                <svg className="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M4 12.5l5 5L20 6" />
+                </svg>
               )}
             </span>
             <span className="text-slate-900 font-semibold">{opt}</span>

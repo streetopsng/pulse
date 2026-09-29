@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { computeSnapshot } from '../../utils/analytics';
-import { BoltIcon, CheckIcon, CalendarIcon } from '../common/Icons';
+import { BoltIcon, CheckIcon, CalendarIcon, ArrowRightIcon } from '../common/Icons';
 import { usePulse } from '../../context/PulseContext';
 import { ConfirmationModal } from '../common/ConfirmationModal';
 
@@ -25,6 +25,13 @@ export function PulseCard({ pulse }) {
       return (
         <span className="inline-flex items-center gap-1.5 text-[10.5px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full border border-purple-200 bg-purple-50 text-purple-700 shrink-0">
           Collecting
+        </span>
+      );
+    }
+    if (status === 'cancelled') {
+      return (
+        <span className="inline-flex items-center gap-1.5 text-[10.5px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full border border-slate-200 bg-slate-100 text-slate-600 shrink-0">
+          Ended
         </span>
       );
     }
@@ -82,9 +89,11 @@ export function PulseCard({ pulse }) {
             type="button"
             onClick={handleDeleteClick}
             title="Delete pulse"
-            className="opacity-0 group-hover:opacity-100 transition-opacity text-slate-400 hover:text-rose-600 p-1.5 rounded-lg hover:bg-rose-50 text-xs font-bold ml-1 cursor-pointer"
+            className="opacity-0 group-hover:opacity-100 transition-opacity text-slate-400 hover:text-rose-600 p-1.5 rounded-lg hover:bg-rose-50 ml-1 cursor-pointer"
           >
-            ✕
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
           </button>
         </div>
       </div>
@@ -138,9 +147,9 @@ export function PulseCard({ pulse }) {
             e.stopPropagation();
             openSnapshot(pulse.id);
           }}
-          className="text-xs sm:text-sm font-semibold text-purple-600 hover:text-purple-700 transition-colors cursor-pointer ml-auto sm:ml-0"
+          className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-purple-600 hover:text-purple-700 transition-colors cursor-pointer ml-auto sm:ml-0"
         >
-          View snapshot →
+          View snapshot <ArrowRightIcon />
         </button>
       </div>
 

@@ -90,60 +90,62 @@ export async function resolveGummyGumLaunch() {
   return session;
 }
 
-export async function reportGummyGumResult(report) {
-  const session = getGummyGumSession();
-  if (!session || !session.reportToken) return;
-
-  try {
-    await fetch(`${API_URL}/api/gummygum/launch/report`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ reportToken: session.reportToken, report }),
-    });
-    session.reported = true;
-    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(session));
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(session));
-  } catch (err) {
-    console.error('GummyGum result report failed', err);
-  }
+function persistSession(session) {
+  sessionStorage.setItem(STORAGE_KEY, JSON.stringify(session));
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(session));
 }
 
-// Host-only: explicitly close session, ensure final report submitted, and return to GummyGum
-export async function closeGummyGumSession(finalReport) {
-  const session = getGummyGumSession();
-  if (!session) {
-    window.location.href = 'https://gummygum.app';
-    return;
-  }
-
-  if (!session.isHost) {
-    console.warn('Only the session host can close the session.');
-    returnToGummyGum();
-    return;
-  }
-
-  try {
-    await fetch(`${API_URL}/api/gummygum/launch/close`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ reportToken: session.reportToken, report: finalReport }),
-    });
-  } catch (err) {
-    console.error('GummyGum close session failed', err);
-  } finally {
-    const hub = session.hubUrl || 'https://gummygum.app';
-    sessionStorage.removeItem(STORAGE_KEY);
-    localStorage.removeItem(STORAGE_KEY);
-    window.location.href = hub;
-  }
-}
-
-// Player / guest return: safe navigation back to GummyGum without closing the host's room
-export function returnToGummyGum() {
-  const session = getGummyGumSession();
-  const hub = session?.hubUrl || 'https://gummygum.app';
+function clearSession() {
   sessionStorage.removeItem(STORAGE_KEY);
   localStorage.removeItem(STORAGE_KEY);
+}
+
+async function postLaunch(path, body) {
+  const res = await fetch(`${API_URL}/api/gummygum/launch/${path}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+    keepalive: true,
+  });
+  return res.ok;
+}
+
+// Host-only: a report ends the hosted session hub-side, so participants must never call this.
+export async function reportGummyGumResult(report) {
+  const session = getGummyGumSession();
+  if (!session || !session.isHost || !session.reportToken || session.reported) return false;
+
+  try {
+    const ok = await postLaunch('report', { reportToken: session.reportToken, report });
+    if (ok) {
+      session.reported = true;
+      persistSession(session);
+    }
+    return ok;
+  } catch (err) {
+    console.error('GummyGum result report failed', err);
+    return false;
+  }
+}
+
+// Host-only End session: reports the result (completed) or cancels, then returns to the hub.
+export async function endGummyGumSession(finalReport) {
+  const session = getGummyGumSession();
+  const hub = session?.hubUrl || 'https://gummygum.app';
+
+  if (session?.isHost && session.reportToken) {
+    try {
+      if (finalReport && !session.reported) {
+        await postLaunch('close', { reportToken: session.reportToken, report: finalReport });
+      } else if (!session.reported) {
+        await postLaunch('cancel', { reportToken: session.reportToken });
+      }
+    } catch (err) {
+      console.error('GummyGum end session failed', err);
+    }
+  }
+
+  clearSession();
   window.location.href = hub;
 }
 
@@ -164,7 +166,7 @@ export async function startNextRoundGummyGum(previousRoundReport) {
       session.reportToken = body.data.reportToken;
       session.round = body.data.round || (session.round + 1);
       session.reported = false;
-      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(session));
+      persistSession(session);
       return session;
     }
   } catch (err) {

@@ -2,9 +2,12 @@ import { useState } from 'react';
 import { Button } from '../../common/Button';
 import { usePulse } from '../../../context/PulseContext';
 import { GameRulesModal } from '../../common/GameRulesModal';
+import { ArrowRightIcon } from '../../common/Icons';
+import { useGummyGum } from '../../../context/GummyGumContext';
 
 export function InstructionsScreen() {
-  const { activePulse, empStart, empEmail } = usePulse();
+  const { activePulse, empStart, verifiedEmail } = usePulse();
+  const { ggSession } = useGummyGum();
   const [showRules, setShowRules] = useState(false);
 
   if (!activePulse) return null;
@@ -53,14 +56,15 @@ export function InstructionsScreen() {
           className="w-full"
           onClick={() => setShowRules(true)}
         >
-          Begin Survey →
+          Begin Survey <ArrowRightIcon className="w-4 h-4 ml-2" />
         </Button>
       </div>
 
       {showRules && (
         <GameRulesModal
           onConfirm={handleConfirmRules}
-          name={empEmail ? empEmail.split('@')[0] : ''}
+          name={ggSession?.player?.name?.split(' ')[0] || (verifiedEmail ? verifiedEmail.split('@')[0] : '')}
+          anonymous={activePulse.privacy === 'anonymous'}
         />
       )}
 

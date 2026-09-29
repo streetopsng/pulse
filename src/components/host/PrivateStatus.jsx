@@ -1,5 +1,8 @@
+import { useState } from 'react';
 import { Button } from '../common/Button';
+import { ConfirmationModal } from '../common/ConfirmationModal';
 import { Card } from '../common/Card';
+import { ClipboardIcon, LinkIcon, ArrowLeftIcon } from '../common/Icons';
 import { usePulse } from '../../context/PulseContext';
 
 export function PrivateStatus() {
@@ -8,8 +11,10 @@ export function PrivateStatus() {
     closePulse,
     openSnapshot,
     setHostScreen,
+    showToast,
     isFromGummyGum,
   } = usePulse();
+  const [confirmFinalizeOpen, setConfirmFinalizeOpen] = useState(false);
 
   if (!activePulse) {
     return (
@@ -39,10 +44,12 @@ export function PrivateStatus() {
 
   function copyLink() {
     navigator.clipboard.writeText(directLink);
+    showToast('Direct survey link copied to clipboard');
   }
 
   function copyCode() {
     navigator.clipboard.writeText(accessCode);
+    showToast('Session PIN copied to clipboard');
   }
 
   return (
@@ -59,29 +66,29 @@ export function PrivateStatus() {
           {totalInvited} participants invited by email
         </p>
 
-        <div className="flex items-center justify-center gap-3">
-          {!isFromGummyGum && (
+        {!isFromGummyGum && (
+          <div className="flex items-center justify-center gap-3">
             <div className="inline-flex items-center gap-1.5 bg-indigo-50 border border-indigo-200/80 px-3 py-1 rounded-xl text-xs">
               <span className="text-slate-500 font-medium">Session PIN:</span>
               <button
                 type="button"
                 onClick={copyCode}
                 title="Click to copy PIN"
-                className="font-mono font-bold text-indigo-700 hover:text-indigo-900 cursor-pointer"
+                className="inline-flex items-center gap-1 font-mono font-bold text-indigo-700 hover:text-indigo-900 cursor-pointer"
               >
-                {accessCode} 📋
+                {accessCode} <ClipboardIcon />
               </button>
             </div>
-          )}
 
-          <button
-            type="button"
-            onClick={copyLink}
-            className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 bg-white border border-slate-200 hover:border-slate-300 px-3 py-1 rounded-xl transition-all shadow-2xs cursor-pointer"
-          >
-            🔗 Copy Direct Link
-          </button>
-        </div>
+            <button
+              type="button"
+              onClick={copyLink}
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-600 hover:text-indigo-800 bg-white border border-slate-200 hover:border-slate-300 px-3 py-1 rounded-xl transition-all shadow-2xs cursor-pointer"
+            >
+              <LinkIcon /> Copy Direct Link
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Progress Card */}
@@ -110,7 +117,7 @@ export function PrivateStatus() {
           >
             View Snapshot
           </Button>
-          <Button variant="ghost" onClick={handleCloseAndSnapshot}>
+          <Button variant="ghost" onClick={() => setConfirmFinalizeOpen(true)}>
             End Survey &amp; Finalize
           </Button>
         </div>
@@ -121,11 +128,24 @@ export function PrivateStatus() {
         <button
           type="button"
           onClick={() => setHostScreen('home')}
-          className="text-xs font-semibold text-slate-500 hover:text-indigo-600 transition-colors cursor-pointer"
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-indigo-600 transition-colors cursor-pointer"
         >
-          ← Back to your pulses
+          <ArrowLeftIcon /> Back to your pulses
         </button>
       </div>
+      <ConfirmationModal
+        isOpen={confirmFinalizeOpen}
+        title="Finalise results?"
+        message="This closes the survey to new responses and records the results in GummyGum. Participants still answering will see that it has closed."
+        confirmText="Finalise results"
+        cancelText="Keep collecting"
+        isDanger={false}
+        onConfirm={() => {
+          setConfirmFinalizeOpen(false);
+          handleCloseAndSnapshot();
+        }}
+        onCancel={() => setConfirmFinalizeOpen(false)}
+      />
     </div>
   );
 }

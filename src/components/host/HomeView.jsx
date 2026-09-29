@@ -1,18 +1,25 @@
 import { useState } from 'react';
 import { PulseCard } from './PulseCard';
 import { usePulse } from '../../context/PulseContext';
+import { useGummyGum } from '../../context/GummyGumContext';
+import { isPulseEnded } from '../../services/pulseFirebaseService';
 
 export function HomeView() {
-  const { pulses, startCreate } = usePulse();
+  const { pulses: allPulses, startCreate } = usePulse();
+  const { ggSession } = useGummyGum();
+  // Firestore holds every organisation's pulses; a GummyGum host only ever sees their own room's.
+  const pulses = ggSession?.roomCode
+    ? allPulses.filter((p) => p.accessCode === ggSession.roomCode)
+    : allPulses;
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
 
   const filteredPulses = pulses.filter((p) => {
     const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase().trim());
     if (!matchesSearch) return false;
-    if (statusFilter === 'live') return p.delivery === 'live' && p.status !== 'completed';
-    if (statusFilter === 'async') return p.delivery === 'private' && p.status !== 'completed';
-    if (statusFilter === 'completed') return p.status === 'completed';
+    if (statusFilter === 'live') return p.delivery === 'live' && !isPulseEnded(p);
+    if (statusFilter === 'async') return p.delivery === 'private' && !isPulseEnded(p);
+    if (statusFilter === 'completed') return isPulseEnded(p);
     return true;
   });
 
@@ -73,9 +80,12 @@ export function HomeView() {
               <button
                 type="button"
                 onClick={() => setSearchQuery('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 hover:text-slate-600"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                aria-label="Clear search"
               >
-                ✕
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
               </button>
             )}
           </div>
