@@ -37,7 +37,10 @@ function UnavailableScreen() {
 }
 
 export function EmployeeView() {
-  const { empScreen, activePulse } = usePulse();
+  const { empScreen: currentScreen, activePulse, hubEnded } = usePulse();
+  // The hub-ended screen wins over any in-flight screen except a finished survey.
+  const empScreen =
+    hubEnded && !['completion', 'already'].includes(currentScreen) ? 'session-ended' : currentScreen;
 
   let badgeText = 'GUMMYGUM · PULSE';
   if (activePulse) {
