@@ -16,6 +16,7 @@ import { EmployeeView } from './components/employee/EmployeeView';
 import { PreviewModal } from './components/preview/PreviewModal';
 import { Toast } from './components/common/Toast';
 import { BgDeco } from './components/common/BgDeco';
+import { isPulseEnded } from './services/pulseFirebaseService';
 
 /**
  * Production Host Management Portal (Manager / Organizer view)
@@ -57,6 +58,13 @@ function HostLayout() {
   );
 }
 
+// The hub always appends the room PIN to launch URLs; hosts also get host=true.
+function getLaunchUrlPin() {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('host') === 'true') return null;
+  return params.get('pin') || params.get('roomCode') || null;
+}
+
 /**
  * Root route: blocks direct, non-GummyGum access to the host console (nobody
  * should be able to spin up surveys outside a GummyGum-launched org context),
@@ -68,6 +76,11 @@ function RootRoute() {
 
   if (ggAccessState === 'checking') {
     return <div className="min-h-screen w-full bg-slate-50" />;
+  }
+
+  // A participant whose launch token failed to verify still came from a GummyGum invite.
+  if (ggAccessState === 'denied' && getLaunchUrlPin()) {
+    return <Navigate to="/join" replace />;
   }
 
   if (ggAccessState === 'denied') {
@@ -110,63 +123,99 @@ function RootRoute() {
 function EmployeeLayout() {
   const { pulseId: routePulseId, code: routeCode } = useParams();
   const [searchParams] = useSearchParams();
-  const { ggSession } = useGummyGum();
+  const { ggAccessState, ggSession } = useGummyGum();
   const {
     loadPulseById,
     loadPulseByCode,
     setEmailInput,
     setVerifiedEmail,
     setEmpScreen,
-    activePulse,
+    completedPulseIds,
   } = usePulse();
+  // Resolve each entry route once; re-running on every Firestore update used to bounce participants mid-survey.
+  const resolvedKeyRef = useRef(null);
 
   useEffect(() => {
+    if (ggAccessState === 'checking') return;
+
     const targetId = routePulseId || searchParams.get('id');
     const targetCode = routeCode || searchParams.get('code');
-    const emailParam = searchParams.get('email');
+    const ggRoomCode = ggSession
+      ? !ggSession.isHost && ggSession.roomCode
+      : getLaunchUrlPin();
+    const hostedSessionId = ggSession
+      ? ggSession.hostedSessionId || null
+      : new URLSearchParams(window.location.search).get('sessionId');
+    const key = ggRoomCode
+      ? `gg:${ggRoomCode}`
+      : targetId
+      ? `id:${targetId}`
+      : targetCode
+      ? `code:${targetCode}`
+      : 'entry';
+    if (resolvedKeyRef.current === key) return;
+    resolvedKeyRef.current = key;
 
-    if (emailParam) {
-      setEmailInput(emailParam);
-    }
-
-    if (targetId) {
-      loadPulseById(targetId).then((found) => {
-        if (found) {
-          setEmpScreen('invite');
-        }
-      });
-    } else if (targetCode) {
-      loadPulseByCode(targetCode).then((found) => {
-        if (found) {
-          setEmpScreen('invite');
-        }
-      });
-    } else if (ggSession && !ggSession.isHost && ggSession.roomCode) {
+    // GummyGum already identified the room and the person, so never ask for a code or email.
+    if (ggRoomCode) {
+      setEmpScreen('loading');
       // The host's tab may still be writing the pulse to Firestore when a
       // fast participant's invite click lands — retry briefly before
       // treating it as genuinely missing.
-      const MAX_ATTEMPTS = 6;
+      const MAX_ATTEMPTS = 8;
       const RETRY_DELAY_MS = 1500;
+      const WAIT_ATTEMPTS = 200;
+      const WAIT_DELAY_MS = 3000;
       (async () => {
         let found = null;
-        for (let attempt = 0; attempt < MAX_ATTEMPTS && !found; attempt++) {
-          found = await loadPulseByCode(ggSession.roomCode);
-          if (!found) await new Promise((r) => setTimeout(r, RETRY_DELAY_MS));
+        for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+          found = await loadPulseByCode(ggRoomCode, hostedSessionId);
+          if (found && !isPulseEnded(found)) break;
+          await new Promise((r) => setTimeout(r, RETRY_DELAY_MS));
         }
-        if (found) {
-          if (ggSession.player?.email) {
+        // Earlier hosted sessions' pulses under this PIN are ignored, so keep waiting for the host to launch this one.
+        if (!found && hostedSessionId) {
+          setEmpScreen('unavailable');
+          for (let attempt = 0; attempt < WAIT_ATTEMPTS && !found; attempt++) {
+            await new Promise((r) => setTimeout(r, WAIT_DELAY_MS));
+            found = await loadPulseByCode(ggRoomCode, hostedSessionId);
+          }
+        }
+        if (!found) {
+          setEmpScreen('unavailable');
+        } else if (isPulseEnded(found)) {
+          setEmpScreen('session-ended');
+        } else if (completedPulseIds.includes(found.id)) {
+          setEmpScreen('already');
+        } else {
+          if (ggSession?.player?.email) {
             setEmailInput(ggSession.player.email);
             setVerifiedEmail(ggSession.player.email);
           }
           setEmpScreen('instructions');
-        } else {
-          setEmpScreen('entry');
         }
       })();
-    } else if (!activePulse) {
+      return;
+    }
+
+    const emailParam = searchParams.get('email');
+    if (emailParam) {
+      setEmailInput(emailParam);
+    }
+
+    if (targetId || targetCode) {
+      const load = targetId ? loadPulseById(targetId) : loadPulseByCode(targetCode);
+      load.then((found) => {
+        if (!found) setEmpScreen('entry');
+        else if (isPulseEnded(found)) setEmpScreen('session-ended');
+        else setEmpScreen('invite');
+      });
+    } else {
       setEmpScreen('entry');
     }
   }, [
+    ggAccessState,
+    ggSession,
     routePulseId,
     routeCode,
     searchParams,
@@ -175,8 +224,7 @@ function EmployeeLayout() {
     setEmailInput,
     setVerifiedEmail,
     setEmpScreen,
-    activePulse,
-    ggSession,
+    completedPulseIds,
   ]);
 
   return (

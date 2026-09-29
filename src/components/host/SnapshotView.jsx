@@ -1,7 +1,7 @@
 import { Card } from '../common/Card';
 import { Chip } from '../common/Chip';
 import { Button } from '../common/Button';
-import { CheckIcon, BoltIcon } from '../common/Icons';
+import { CheckIcon, BoltIcon, ArrowLeftIcon } from '../common/Icons';
 import { QTYPES } from '../../constants/questionTypes';
 import { computeSnapshot } from '../../utils/analytics';
 import { usePulse } from '../../context/PulseContext';
@@ -46,9 +46,9 @@ export function SnapshotView() {
         <button
           type="button"
           onClick={() => setHostScreen('home')}
-          className="text-xs sm:text-sm font-extrabold text-ink underline underline-offset-4 decoration-accent decoration-2 hover:text-accent-dark cursor-pointer"
+          className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-extrabold text-ink underline underline-offset-4 decoration-accent decoration-2 hover:text-accent-dark cursor-pointer"
         >
-          ← All pulses
+          <ArrowLeftIcon /> All pulses
         </button>
       </div>
 
@@ -175,7 +175,7 @@ export function SnapshotView() {
                     </div>
                     <div className="flex items-center gap-2 mt-1">
                       <span className="text-[11px] font-medium text-slate-600 bg-slate-100 px-2.5 py-0.5 rounded-full border border-slate-200">
-                        {qTypeInfo.icon} {qTypeInfo.label}
+                        {qTypeInfo.label}
                       </span>
                       {qq.topic && (
                         <span className="text-[11px] font-medium text-indigo-700 bg-indigo-50 px-2.5 py-0.5 rounded-full border border-indigo-100">
@@ -268,14 +268,14 @@ export function SnapshotView() {
           Pulse Survey is standalone: it owns questions, response controls, employee-facing flows, collection, history, and real-time results. Change Metre (under Measure) owns scheduling and longitudinal comparisons — importing Pulse survey blocks as repeatable measurement points inside a tracked timeline.
         </p>
         <div className="font-mono text-[11px] text-slate-700 bg-slate-50 border border-slate-200 rounded-xl p-3 my-3 leading-relaxed overflow-x-auto">
-          Baseline → Checkpoint (Pulse Survey) → Checkpoint (Pulse Survey) → Endline Analysis
+          Baseline, then Checkpoint (Pulse Survey), then Checkpoint (Pulse Survey), then Endline Analysis
         </div>
       </div>
 
       {/* Footer Back Button */}
       <div>
         <Button variant="ghost" onClick={() => setHostScreen('home')}>
-          ← Back to your pulses
+          <ArrowLeftIcon className="w-3.5 h-3.5 mr-1.5" /> Back to your pulses
         </Button>
       </div>
     </div>

@@ -9,11 +9,17 @@ import {
   fetchPulseByCode,
   savePulseToFirebase,
   submitResponseToFirebase,
-  updatePulseStatusInFirebase,
+  updatePulseFieldsInFirebase,
   deletePulseFromFirebase,
+  isPulseEnded,
+  pickPulseForPin,
 } from '../services/pulseFirebaseService';
 import { sendPulseInvitations } from '../services/emailService';
-import { getGummyGumSession } from '../lib/gummygumSession';
+import {
+  getGummyGumSession,
+  reportGummyGumResult,
+  endGummyGumSession,
+} from '../lib/gummygumSession';
 
 const PulseContext = createContext(null);
 
@@ -31,6 +37,34 @@ function createBlankDraft() {
     invitedEmployees: [],
     privacy: 'anonymous',
   };
+}
+
+function getResponseCount(pulse) {
+  return Math.max(pulse?.responses?.length || 0, pulse?.responseCount || 0);
+}
+
+function buildPulseReport(pulse) {
+  return {
+    experience: 'pulse',
+    outcome: 'completed',
+    surveyName: pulse.name,
+    delivery: pulse.delivery,
+    privacy: pulse.privacy,
+    questionCount: pulse.questions?.length || 0,
+    invitedCount: pulse.invitedEmployees?.length || 0,
+    responseCount: getResponseCount(pulse),
+  };
+}
+
+function isGummyGumHostPulse(pulse) {
+  const ggSession = getGummyGumSession();
+  return Boolean(
+    pulse &&
+      ggSession?.isHost &&
+      ggSession.roomCode &&
+      pulse.accessCode === ggSession.roomCode &&
+      (!ggSession.hostedSessionId || !pulse.hostedSessionId || pulse.hostedSessionId === ggSession.hostedSessionId)
+  );
 }
 
 function getStoredPulses() {
@@ -171,10 +205,13 @@ export function PulseProvider({ children }) {
   useEffect(() => {
     if (!isFirebaseConfigured || !activePulseId) return;
 
+    let seenExisting = false;
     const unsubscribe = subscribeToPulseDoc(activePulseId, ({ exists, status }) => {
-      if (exists && status !== 'completed') return;
+      if (exists) seenExisting = true;
+      // A missing doc only means "ended" once we've seen it exist (the host may still be creating it).
+      if (exists ? !isPulseEnded({ status }) : !seenExisting) return;
       setEmpScreen((current) =>
-        current === 'completion' || current === 'already' || current === 'session-ended'
+        ['completion', 'already', 'session-ended', 'loading', 'unavailable', 'entry', 'join'].includes(current)
           ? current
           : 'session-ended'
       );
@@ -203,19 +240,23 @@ export function PulseProvider({ children }) {
   );
 
   const loadPulseByCode = useCallback(
-    async (code) => {
+    async (code, hostedSessionId = null) => {
       if (!code) return null;
       const clean = code.toString().trim();
-      const existing = pulses.find((p) => p.accessCode === clean);
-      if (existing) {
-        setActivePulseId(existing.id);
-        return existing;
+      const localPick = pickPulseForPin(pulses, clean, hostedSessionId);
+      if (localPick && !isPulseEnded(localPick)) {
+        setActivePulseId(localPick.id);
+        return localPick;
       }
-      const fetched = await fetchPulseByCode(clean);
+      const fetched = await fetchPulseByCode(clean, hostedSessionId);
       if (fetched) {
         setPulses((prev) => [fetched, ...prev.filter((p) => p.id !== fetched.id)]);
         setActivePulseId(fetched.id);
         return fetched;
+      }
+      if (localPick) {
+        setActivePulseId(localPick.id);
+        return localPick;
       }
       return null;
     },
@@ -248,7 +289,7 @@ export function PulseProvider({ children }) {
   function openPulseCard(id) {
     const p = pulses.find((x) => x.id === id);
     if (!p) return;
-    if (p.status === 'completed') {
+    if (isPulseEnded(p)) {
       openSnapshot(id);
       return;
     }
@@ -269,14 +310,43 @@ export function PulseProvider({ children }) {
     showToast('Pulse survey deleted');
   }
 
+  // Finalising results is what "completed" means for Pulse, so this is where GummyGum gets the result.
   function closePulse(id) {
-    setPulses((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, status: 'completed' } : p))
-    );
-    updatePulseStatusInFirebase(id, 'completed').catch((err) =>
+    const target = pulses.find((p) => p.id === id);
+    const fields = { status: 'completed', endedAt: new Date().toISOString() };
+    setPulses((prev) => prev.map((p) => (p.id === id ? { ...p, ...fields } : p)));
+    updatePulseFieldsInFirebase(id, fields).catch((err) =>
       console.warn('Firebase status update fallback:', err)
     );
+    if (isGummyGumHostPulse(target)) {
+      reportGummyGumResult(buildPulseReport({ ...target, ...fields }));
+    }
     showToast('Pulse survey closed');
+  }
+
+  async function endHostSession() {
+    const ggSession = getGummyGumSession();
+    const target = ggSession?.roomCode
+      ? pickPulseForPin(pulses, ggSession.roomCode, ggSession.hostedSessionId || null)
+      : null;
+    let report = null;
+
+    if (target) {
+      const completed = target.status === 'completed' || getResponseCount(target) > 0;
+      if (!isPulseEnded(target)) {
+        const fields = {
+          status: completed ? 'completed' : 'cancelled',
+          endedAt: new Date().toISOString(),
+        };
+        setPulses((prev) => prev.map((p) => (p.id === target.id ? { ...p, ...fields } : p)));
+        await updatePulseFieldsInFirebase(target.id, fields).catch((err) =>
+          console.warn('Firebase status update fallback:', err)
+        );
+      }
+      if (completed) report = buildPulseReport({ ...target, status: 'completed' });
+    }
+
+    await endGummyGumSession(report);
   }
 
   function startCreate() {
@@ -459,8 +529,10 @@ export function PulseProvider({ children }) {
       privacy: draft.privacy,
       status: draft.delivery === 'live' ? 'live' : 'collecting',
       createdDate: 'Today',
+      createdAt: new Date().toISOString(),
       liveQIndex: 0,
       responses: [],
+      ...(ggSession?.isHost && ggSession.hostedSessionId ? { hostedSessionId: ggSession.hostedSessionId } : {}),
     };
 
     setPulses((prev) => [newPulse, ...prev]);
@@ -506,7 +578,7 @@ export function PulseProvider({ children }) {
   // internal `draft` state — same deploy semantics as deployPulse(), just
   // reading from `config` so the native builder chain can be skipped
   // entirely. See src/App.jsx's HostLayout for the caller.
-  function deployPulseFromGummyGum(config) {
+  async function deployPulseFromGummyGum(config) {
     if (!config) return null;
     const ggSession = getGummyGumSession();
     const accessCode =
@@ -514,13 +586,35 @@ export function PulseProvider({ children }) {
       Math.floor(100000 + Math.random() * 900000).toString();
 
     // A host who reconnects to the same GummyGum room (closed tab, resumed
-    // from the hub, etc.) mints a fresh launch token and re-runs this on
-    // mount — reuse the pulse already tied to that room's PIN instead of
-    // creating a duplicate every time.
-    const existing = pulses.find((p) => p.accessCode === accessCode);
-    if (existing) {
+    // from the hub, another device, etc.) mints a fresh launch token and
+    // re-runs this on mount — reuse the pulse already tied to that room's
+    // PIN instead of creating a duplicate every time.
+    // A re-run of the same PIN is a different hosted session and gets its own pulse.
+    const hostedSessionId = (ggSession?.isHost && ggSession.hostedSessionId) || null;
+    let existing = pickPulseForPin(pulses, accessCode, hostedSessionId);
+    if ((!existing || isPulseEnded(existing)) && isFirebaseConfigured) {
+      const fetched = await fetchPulseByCode(accessCode, hostedSessionId);
+      // A pulse this same hosted session ended stays ended (snapshot), so a duplicate tab can't reopen it.
+      if (fetched && (!isPulseEnded(fetched) || (hostedSessionId && !existing))) {
+        existing = fetched;
+        setPulses((prev) => [fetched, ...prev.filter((p) => p.id !== fetched.id)]);
+      }
+    }
+    if (existing && !isPulseEnded(existing)) {
+      if (hostedSessionId && !existing.hostedSessionId) {
+        existing = { ...existing, hostedSessionId };
+        setPulses((prev) => prev.map((p) => (p.id === existing.id ? { ...p, hostedSessionId } : p)));
+        updatePulseFieldsInFirebase(existing.id, { hostedSessionId }).catch((err) =>
+          console.warn('Firebase hosted session tag fallback:', err)
+        );
+      }
       setActivePulseId(existing.id);
       setHostScreen(existing.delivery === 'live' ? 'live-session' : 'private-status');
+      return existing;
+    }
+    if (existing) {
+      setActivePulseId(existing.id);
+      openSnapshot(existing.id);
       return existing;
     }
 
@@ -538,8 +632,10 @@ export function PulseProvider({ children }) {
       privacy: config.privacy === 'identified' ? 'identified' : 'anonymous',
       status: delivery === 'live' ? 'live' : 'collecting',
       createdDate: 'Today',
+      createdAt: new Date().toISOString(),
       liveQIndex: 0,
       responses: [],
+      ...(hostedSessionId ? { hostedSessionId } : {}),
     };
 
     setPulses((prev) => [newPulse, ...prev]);
@@ -563,22 +659,19 @@ export function PulseProvider({ children }) {
     return newPulse;
   }
 
+  // Persisted so the Firestore snapshot listener doesn't reset the host back to question 1.
   function nextLiveQuestion() {
-    if (!activePulse) return;
-    setPulses((prev) =>
-      prev.map((p) =>
-        p.id === activePulse.id && p.liveQIndex < p.questions.length - 1
-          ? { ...p, liveQIndex: p.liveQIndex + 1 }
-          : p
-      )
+    if (!activePulse || activePulse.liveQIndex >= activePulse.questions.length - 1) return;
+    const liveQIndex = activePulse.liveQIndex + 1;
+    setPulses((prev) => prev.map((p) => (p.id === activePulse.id ? { ...p, liveQIndex } : p)));
+    updatePulseFieldsInFirebase(activePulse.id, { liveQIndex }).catch((err) =>
+      console.warn('Firebase live question update fallback:', err)
     );
   }
 
   function endLivePulse() {
     if (!activePulse) return;
-    setPulses((prev) =>
-      prev.map((p) => (p.id === activePulse.id ? { ...p, status: 'completed' } : p))
-    );
+    closePulse(activePulse.id);
     openSnapshot(activePulse.id);
   }
 
@@ -611,6 +704,10 @@ export function PulseProvider({ children }) {
   }
 
   function empStart() {
+    if (isPulseEnded(activePulse)) {
+      setEmpScreen('session-ended');
+      return;
+    }
     setEmpQIndex(0);
     setEmpAnswers({});
     setEmpScreen('question');
@@ -652,6 +749,10 @@ export function PulseProvider({ children }) {
 
   function empSubmit() {
     if (!activePulse) return;
+    if (isPulseEnded(activePulse)) {
+      setEmpScreen('session-ended');
+      return;
+    }
     const submission = {
       id: 'r_' + Math.random().toString(36).slice(2, 9),
       answers: { ...empAnswers },
@@ -743,6 +844,7 @@ export function PulseProvider({ children }) {
         openSnapshot,
         deletePulse,
         closePulse,
+        endHostSession,
         startCreate,
         pickTemplate,
         toggleBuilderQ,
@@ -761,6 +863,7 @@ export function PulseProvider({ children }) {
         // Employee state & actions
         empScreen,
         setEmpScreen,
+        completedPulseIds,
         emailInput,
         setEmailInput,
         emailError,

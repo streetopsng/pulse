@@ -3,6 +3,7 @@ import { LikertScale } from '../../inputs/LikertScale';
 import { ChoiceList } from '../../inputs/ChoiceList';
 import { OpenTextarea } from '../../inputs/OpenTextarea';
 import { Button } from '../../common/Button';
+import { ArrowLeftIcon, ArrowRightIcon } from '../../common/Icons';
 import { usePulse } from '../../../context/PulseContext';
 
 export function QuestionScreen() {
@@ -93,7 +94,7 @@ export function QuestionScreen() {
       <div className="flex items-center justify-between pt-5 border-t border-slate-100">
         {empQIndex > 0 ? (
           <Button variant="ghost" size="sm" onClick={empBack}>
-            ← Back
+            <ArrowLeftIcon className="w-3.5 h-3.5 mr-1.5" /> Back
           </Button>
         ) : (
           <div />
@@ -101,7 +102,11 @@ export function QuestionScreen() {
 
         {(qq.type === 'open' || qq.type === 'multi' || currentAnswer !== undefined) && (
           <Button variant="primary" size="sm" onClick={empNext}>
-            {isLast ? 'Submit' : 'Next →'}
+            {isLast ? 'Submit' : (
+              <>
+                Next <ArrowRightIcon className="w-3.5 h-3.5 ml-1.5" />
+              </>
+            )}
           </Button>
         )}
       </div>

@@ -1,5 +1,7 @@
+import { useState } from 'react';
 import { Button } from '../common/Button';
-import { PeopleIcon, ClipboardIcon, BoltIcon, CalendarIcon } from '../common/Icons';
+import { ConfirmationModal } from '../common/ConfirmationModal';
+import { PeopleIcon, ClipboardIcon, BoltIcon, CalendarIcon, LinkIcon, ArrowLeftIcon, ArrowRightIcon } from '../common/Icons';
 import { computeSnapshot } from '../../utils/analytics';
 import { usePulse } from '../../context/PulseContext';
 
@@ -12,6 +14,7 @@ export function LiveSession() {
     showToast,
     isFromGummyGum,
   } = usePulse();
+  const [confirmFinalizeOpen, setConfirmFinalizeOpen] = useState(false);
 
   if (!activePulse) {
     return (
@@ -53,7 +56,9 @@ export function LiveSession() {
             Waiting for live participant responses…
           </p>
           <p className="text-xs text-ink-faint">
-            Participants can join using the session PIN or direct link above. Responses update in real time.
+            {isFromGummyGum
+              ? 'Participants join from their GummyGum invite. Responses update in real time.'
+              : 'Participants can join using the session PIN or direct link above. Responses update in real time.'}
           </p>
         </div>
       );
@@ -149,29 +154,29 @@ export function LiveSession() {
             </span>
           </div>
 
-          <div className="flex items-center gap-3">
-            {!isFromGummyGum && (
+          {!isFromGummyGum && (
+            <div className="flex items-center gap-3">
               <div className="inline-flex items-center gap-2 bg-indigo-50 border border-indigo-200/80 px-3 py-1 rounded-xl text-xs">
                 <span className="text-slate-500 font-medium">Session PIN:</span>
                 <button
                   type="button"
                   onClick={copyCode}
                   title="Click to copy PIN"
-                  className="font-mono font-bold text-indigo-700 hover:text-indigo-900 cursor-pointer"
+                  className="inline-flex items-center gap-1 font-mono font-bold text-indigo-700 hover:text-indigo-900 cursor-pointer"
                 >
-                  {accessCode} 📋
+                  {accessCode} <ClipboardIcon />
                 </button>
               </div>
-            )}
 
-            <button
-              type="button"
-              onClick={copyLink}
-              className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 bg-white border border-slate-200 hover:border-slate-300 px-3 py-1 rounded-xl transition-all shadow-2xs cursor-pointer"
-            >
-              🔗 Copy Direct Link
-            </button>
-          </div>
+              <button
+                type="button"
+                onClick={copyLink}
+                className="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-600 hover:text-indigo-800 bg-white border border-slate-200 hover:border-slate-300 px-3 py-1 rounded-xl transition-all shadow-2xs cursor-pointer"
+              >
+                <LinkIcon /> Copy Direct Link
+              </button>
+            </div>
+          )}
         </div>
 
         {/* 4-Stat Metric Row */}
@@ -240,7 +245,7 @@ export function LiveSession() {
 
         {/* Controls */}
         <div className="flex flex-wrap items-center justify-end gap-2.5 pt-2 border-t border-slate-100">
-          <Button variant="ghost" onClick={endLivePulse}>
+          <Button variant="ghost" onClick={() => setConfirmFinalizeOpen(true)}>
             End Pulse &amp; View Snapshot
           </Button>
           <Button
@@ -248,7 +253,7 @@ export function LiveSession() {
             disabled={p.liveQIndex >= p.questions.length - 1}
             onClick={nextLiveQuestion}
           >
-            Next Question →
+            Next Question <ArrowRightIcon className="w-3.5 h-3.5 ml-1.5" />
           </Button>
         </div>
       </div>
@@ -260,10 +265,25 @@ export function LiveSession() {
         </p>
         <button
           type="button"
-          onClick={() => setHostScreen('home')}>
-          ← Back to your pulses
+          onClick={() => setHostScreen('home')}
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-indigo-600 transition-colors cursor-pointer"
+        >
+          <ArrowLeftIcon /> Back to your pulses
         </button>
       </div>
+      <ConfirmationModal
+        isOpen={confirmFinalizeOpen}
+        title="Finalise results?"
+        message="This closes the survey to new responses and records the results in GummyGum. Participants still answering will see that it has closed."
+        confirmText="Finalise results"
+        cancelText="Keep collecting"
+        isDanger={false}
+        onConfirm={() => {
+          setConfirmFinalizeOpen(false);
+          endLivePulse();
+        }}
+        onCancel={() => setConfirmFinalizeOpen(false)}
+      />
     </div>
   );
 }

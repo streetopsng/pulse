@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Button } from '../../common/Button';
+import { ArrowRightIcon } from '../../common/Icons';
 import { usePulse } from '../../../context/PulseContext';
 
 export function EntryScreen() {
@@ -25,9 +26,9 @@ export function EntryScreen() {
         </Button>
         <Link
           to="/"
-          className="text-xs font-medium text-slate-500 hover:text-slate-800 transition-colors mt-3"
+          className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-500 hover:text-slate-800 transition-colors mt-3"
         >
-          Host or Administrator? Open Host Console →
+          Host or Administrator? Open Host Console <ArrowRightIcon />
         </Link>
       </div>
     </div>
