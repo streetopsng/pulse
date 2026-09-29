@@ -37,7 +37,8 @@ function UnavailableScreen() {
 }
 
 export function EmployeeView() {
-  const { empScreen, activePulse } = usePulse();
+  const { empScreen: currentScreen, activePulse, hubEnded } = usePulse();
+  const empScreen = hubEnded ? 'session-ended' : currentScreen;
 
   let badgeText = 'GUMMYGUM · PULSE';
   if (activePulse) {

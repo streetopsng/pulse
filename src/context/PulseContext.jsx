@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { TEMPLATES, cloneQuestions, createQuestion } from '../constants/templates';
 import { isFirebaseConfigured } from '../config/firebase';
 import {
@@ -19,7 +19,10 @@ import {
   getGummyGumSession,
   reportGummyGumResult,
   endGummyGumSession,
+  leaveToGummyGumHub,
+  watchHubSessionStatus,
 } from '../lib/gummygumSession';
+import { useGummyGum } from './GummyGumContext';
 
 const PulseContext = createContext(null);
 
@@ -210,8 +213,9 @@ export function PulseProvider({ children }) {
       if (exists) seenExisting = true;
       // A missing doc only means "ended" once we've seen it exist (the host may still be creating it).
       if (exists ? !isPulseEnded({ status }) : !seenExisting) return;
+      // Before a pulse is resolved the active id can still point at an unrelated local pulse.
       setEmpScreen((current) =>
-        ['completion', 'already', 'session-ended', 'loading', 'unavailable', 'entry', 'join'].includes(current)
+        ['session-ended', 'loading', 'unavailable', 'entry', 'join'].includes(current)
           ? current
           : 'session-ended'
       );
@@ -219,6 +223,46 @@ export function PulseProvider({ children }) {
 
     return () => unsubscribe();
   }, [activePulseId]);
+
+  const { ggSession } = useGummyGum();
+  const [hubEnded, setHubEnded] = useState(false);
+  const hubPin = ggSession?.roomCode || null;
+  const hubHostedSessionId = ggSession?.hostedSessionId || null;
+  const ggHostPulse =
+    ggSession?.isHost && hubPin ? pickPulseForPin(pulses, hubPin, hubHostedSessionId) : null;
+  // Finalising or ending in-app reports to the hub itself, which also ends the hub session.
+  // A participant who already submitted keeps watching so their tab still closes out with the session.
+  const endedInApp = ggSession?.isHost ? isPulseEnded(ggHostPulse) : empScreen === 'session-ended';
+  const watchHub = Boolean(hubPin && hubHostedSessionId) && !hubEnded && !endedInApp;
+
+  useEffect(() => {
+    if (!watchHub) return;
+    return watchHubSessionStatus({
+      pin: hubPin,
+      hostedSessionId: hubHostedSessionId,
+      onEnded: () => setHubEnded(true),
+    });
+  }, [watchHub, hubPin, hubHostedSessionId]);
+
+  // Mirrors endHostSession's Firestore update so connected participants see the ended screen.
+  const hubEndHandledRef = useRef(false);
+  useEffect(() => {
+    if (!hubEnded || !ggSession?.isHost || hubEndHandledRef.current) return;
+    hubEndHandledRef.current = true;
+    (async () => {
+      if (ggHostPulse && !isPulseEnded(ggHostPulse)) {
+        const fields = {
+          status: getResponseCount(ggHostPulse) > 0 ? 'completed' : 'cancelled',
+          endedAt: new Date().toISOString(),
+        };
+        setPulses((prev) => prev.map((p) => (p.id === ggHostPulse.id ? { ...p, ...fields } : p)));
+        await updatePulseFieldsInFirebase(ggHostPulse.id, fields).catch((err) =>
+          console.warn('Firebase status update fallback:', err)
+        );
+      }
+      leaveToGummyGumHub();
+    })();
+  }, [hubEnded, ggSession, ggHostPulse]);
 
   const loadPulseById = useCallback(
     async (pulseId) => {
@@ -704,7 +748,7 @@ export function PulseProvider({ children }) {
   }
 
   function empStart() {
-    if (isPulseEnded(activePulse)) {
+    if (hubEnded || isPulseEnded(activePulse)) {
       setEmpScreen('session-ended');
       return;
     }
@@ -749,7 +793,7 @@ export function PulseProvider({ children }) {
 
   function empSubmit() {
     if (!activePulse) return;
-    if (isPulseEnded(activePulse)) {
+    if (hubEnded || isPulseEnded(activePulse)) {
       setEmpScreen('session-ended');
       return;
     }
@@ -862,6 +906,7 @@ export function PulseProvider({ children }) {
         endLivePulse,
         // Employee state & actions
         empScreen,
+        hubEnded,
         setEmpScreen,
         completedPulseIds,
         emailInput,

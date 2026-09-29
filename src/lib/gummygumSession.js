@@ -24,7 +24,15 @@ async function verifyLaunchTokenOnce(ggt) {
       body: JSON.stringify({ token: ggt }),
     });
     const body = await res.json();
-    if (!res.ok || !body.success) return null;
+    if (!res.ok || !body.success) {
+      const fallbackUrl = body?.data?.fallbackUrl;
+      // A rejected invite link goes to the hub's /join page, which explains the specific reason.
+      if (typeof fallbackUrl === 'string' && fallbackUrl.startsWith('https://gummygum.app/')) {
+        window.location.replace(fallbackUrl);
+        return new Promise(() => {});
+      }
+      return null;
+    }
     return body;
   } catch (err) {
     console.error('GummyGum launch verify failed', err);
@@ -149,6 +157,66 @@ export async function endGummyGumSession(finalReport) {
 
   clearSession();
   window.location.href = hub;
+}
+
+// The hub already closed the session, so leave without reporting or cancelling again.
+export function leaveToGummyGumHub() {
+  const hub = getGummyGumSession()?.hubUrl || 'https://gummygum.app';
+  clearSession();
+  window.location.href = hub;
+}
+
+const HUB_STATUS_POLL_MS = 15_000;
+
+// The hub can't write to this experience's database, so a session ended from the hub is
+// detected by polling its status. A newer hosted session under the same PIN also means ours is over.
+export function watchHubSessionStatus({ pin, hostedSessionId, onEnded }) {
+  let stopped = false;
+  let timer = null;
+
+  const schedule = () => {
+    if (timer) clearTimeout(timer);
+    timer = null;
+    if (!stopped && !document.hidden) timer = setTimeout(check, HUB_STATUS_POLL_MS);
+  };
+
+  async function check() {
+    if (stopped) return;
+    try {
+      const res = await fetch(`${API_URL}/api/gummygum/sessions/by-pin/${encodeURIComponent(pin)}`);
+      if (res.ok) {
+        const body = await res.json();
+        const data = body?.success ? body.data : null;
+        if (!stopped && data?.id && (data.id !== hostedSessionId || data.status === 'Ended')) {
+          stop();
+          onEnded();
+          return;
+        }
+      }
+    } catch {
+      // Network errors never end a session.
+    }
+    schedule();
+  }
+
+  const onVisibility = () => {
+    if (document.hidden) {
+      if (timer) clearTimeout(timer);
+      timer = null;
+    } else {
+      void check();
+    }
+  };
+
+  function stop() {
+    stopped = true;
+    if (timer) clearTimeout(timer);
+    document.removeEventListener('visibilitychange', onVisibility);
+  }
+
+  document.addEventListener('visibilitychange', onVisibility);
+  void check();
+  return stop;
 }
 
 // Host-only: start next round from within the experience, preserving tracking in GummyGum
