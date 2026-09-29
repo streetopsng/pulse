@@ -1,8 +1,9 @@
 import { usePulse } from '../../../context/PulseContext';
 
 export function SessionEndedScreen() {
-  const { activePulse } = usePulse();
-  const completed = activePulse?.status === 'completed';
+  const { activePulse, completedPulseIds } = usePulse();
+  const completed =
+    activePulse?.status === 'completed' || Boolean(activePulse && completedPulseIds.includes(activePulse.id));
 
   return (
     <div className="text-center py-8 sm:py-10 max-w-sm mx-auto">

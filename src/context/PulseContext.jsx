@@ -213,8 +213,9 @@ export function PulseProvider({ children }) {
       if (exists) seenExisting = true;
       // A missing doc only means "ended" once we've seen it exist (the host may still be creating it).
       if (exists ? !isPulseEnded({ status }) : !seenExisting) return;
+      // Before a pulse is resolved the active id can still point at an unrelated local pulse.
       setEmpScreen((current) =>
-        ['completion', 'already', 'session-ended', 'loading', 'unavailable', 'entry', 'join'].includes(current)
+        ['session-ended', 'loading', 'unavailable', 'entry', 'join'].includes(current)
           ? current
           : 'session-ended'
       );
@@ -230,9 +231,8 @@ export function PulseProvider({ children }) {
   const ggHostPulse =
     ggSession?.isHost && hubPin ? pickPulseForPin(pulses, hubPin, hubHostedSessionId) : null;
   // Finalising or ending in-app reports to the hub itself, which also ends the hub session.
-  const endedInApp = ggSession?.isHost
-    ? isPulseEnded(ggHostPulse)
-    : ['completion', 'already', 'session-ended'].includes(empScreen);
+  // A participant who already submitted keeps watching so their tab still closes out with the session.
+  const endedInApp = ggSession?.isHost ? isPulseEnded(ggHostPulse) : empScreen === 'session-ended';
   const watchHub = Boolean(hubPin && hubHostedSessionId) && !hubEnded && !endedInApp;
 
   useEffect(() => {
