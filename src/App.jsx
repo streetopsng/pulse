@@ -143,6 +143,9 @@ function EmployeeLayout() {
     const ggRoomCode = ggSession
       ? !ggSession.isHost && ggSession.roomCode
       : getLaunchUrlPin();
+    const hostedSessionId = ggSession
+      ? ggSession.hostedSessionId || null
+      : new URLSearchParams(window.location.search).get('sessionId');
     const key = ggRoomCode
       ? `gg:${ggRoomCode}`
       : targetId
@@ -161,12 +164,22 @@ function EmployeeLayout() {
       // treating it as genuinely missing.
       const MAX_ATTEMPTS = 8;
       const RETRY_DELAY_MS = 1500;
+      const WAIT_ATTEMPTS = 200;
+      const WAIT_DELAY_MS = 3000;
       (async () => {
         let found = null;
         for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
-          found = await loadPulseByCode(ggRoomCode);
+          found = await loadPulseByCode(ggRoomCode, hostedSessionId);
           if (found && !isPulseEnded(found)) break;
           await new Promise((r) => setTimeout(r, RETRY_DELAY_MS));
+        }
+        // Earlier hosted sessions' pulses under this PIN are ignored, so keep waiting for the host to launch this one.
+        if (!found && hostedSessionId) {
+          setEmpScreen('unavailable');
+          for (let attempt = 0; attempt < WAIT_ATTEMPTS && !found; attempt++) {
+            await new Promise((r) => setTimeout(r, WAIT_DELAY_MS));
+            found = await loadPulseByCode(ggRoomCode, hostedSessionId);
+          }
         }
         if (!found) {
           setEmpScreen('unavailable');

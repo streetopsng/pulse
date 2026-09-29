@@ -70,6 +70,8 @@ export async function resolveGummyGumLaunch() {
     player: body.data.player,
     reportToken: body.data.reportToken,
     roomCode: body.data.roomCode ?? null,
+    // The URL sessionId is the hub's hosted session; the verify response's sessionId is per-launch.
+    hostedSessionId: params.get('sessionId') || null,
     isHost: Boolean(body.data.isHost),
     invitedCount: body.data.invitedCount ?? null,
     // Full survey setup assembled in GummyGum before launch (see

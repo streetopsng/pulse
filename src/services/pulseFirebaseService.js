@@ -19,6 +19,29 @@ export const ENDED_STATUSES = ['completed', 'cancelled'];
 export function isPulseEnded(pulse) {
   return Boolean(pulse) && ENDED_STATUSES.includes(pulse.status);
 }
+
+// The hub reuses a PIN when a session is re-run: with a hostedSessionId, never pick another
+// hosted session's pulse or a closed legacy one. Prefers this session's pulse, then open, then newest.
+export function pickPulseForPin(pulses, code, hostedSessionId) {
+  const clean = String(code || '').trim();
+  const matches = (pulses || []).filter(
+    (p) =>
+      p.accessCode === clean &&
+      (!hostedSessionId ||
+        p.hostedSessionId === hostedSessionId ||
+        (!p.hostedSessionId && !isPulseEnded(p)))
+  );
+  matches.sort((a, b) => {
+    if (hostedSessionId) {
+      const ownDiff = Number(b.hostedSessionId === hostedSessionId) - Number(a.hostedSessionId === hostedSessionId);
+      if (ownDiff !== 0) return ownDiff;
+    }
+    const endedDiff = Number(isPulseEnded(a)) - Number(isPulseEnded(b));
+    if (endedDiff !== 0) return endedDiff;
+    return (b.createdAt || '').localeCompare(a.createdAt || '');
+  });
+  return matches[0] || null;
+}
 const SUBCOLLECTION_RESPONSES = 'responses';
 
 /**
@@ -128,7 +151,7 @@ export async function fetchPulseById(pulseId) {
 /**
  * Fetch a pulse by 6-digit access code (PIN)
  */
-export async function fetchPulseByCode(code) {
+export async function fetchPulseByCode(code, hostedSessionId = null) {
   if (!isFirebaseConfigured || !db || !code) return null;
 
   try {
@@ -139,14 +162,8 @@ export async function fetchPulseByCode(code) {
 
     if (snapshot.empty) return null;
 
-    // PINs can be reused across sessions, so prefer an open pulse, then the newest.
     const matches = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
-    matches.sort((a, b) => {
-      const endedDiff = Number(isPulseEnded(a)) - Number(isPulseEnded(b));
-      if (endedDiff !== 0) return endedDiff;
-      return (b.createdAt || '').localeCompare(a.createdAt || '');
-    });
-    return matches[0];
+    return pickPulseForPin(matches, cleanCode, hostedSessionId);
   } catch (error) {
     console.error('Failed to fetch pulse by code:', error);
     return null;

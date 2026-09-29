@@ -12,6 +12,7 @@ import {
   updatePulseFieldsInFirebase,
   deletePulseFromFirebase,
   isPulseEnded,
+  pickPulseForPin,
 } from '../services/pulseFirebaseService';
 import { sendPulseInvitations } from '../services/emailService';
 import {
@@ -57,7 +58,13 @@ function buildPulseReport(pulse) {
 
 function isGummyGumHostPulse(pulse) {
   const ggSession = getGummyGumSession();
-  return Boolean(pulse && ggSession?.isHost && ggSession.roomCode && pulse.accessCode === ggSession.roomCode);
+  return Boolean(
+    pulse &&
+      ggSession?.isHost &&
+      ggSession.roomCode &&
+      pulse.accessCode === ggSession.roomCode &&
+      (!ggSession.hostedSessionId || !pulse.hostedSessionId || pulse.hostedSessionId === ggSession.hostedSessionId)
+  );
 }
 
 function getStoredPulses() {
@@ -233,24 +240,23 @@ export function PulseProvider({ children }) {
   );
 
   const loadPulseByCode = useCallback(
-    async (code) => {
+    async (code, hostedSessionId = null) => {
       if (!code) return null;
       const clean = code.toString().trim();
-      const localMatches = pulses.filter((p) => p.accessCode === clean);
-      const existing = localMatches.find((p) => !isPulseEnded(p));
-      if (existing) {
-        setActivePulseId(existing.id);
-        return existing;
+      const localPick = pickPulseForPin(pulses, clean, hostedSessionId);
+      if (localPick && !isPulseEnded(localPick)) {
+        setActivePulseId(localPick.id);
+        return localPick;
       }
-      const fetched = await fetchPulseByCode(clean);
+      const fetched = await fetchPulseByCode(clean, hostedSessionId);
       if (fetched) {
         setPulses((prev) => [fetched, ...prev.filter((p) => p.id !== fetched.id)]);
         setActivePulseId(fetched.id);
         return fetched;
       }
-      if (localMatches[0]) {
-        setActivePulseId(localMatches[0].id);
-        return localMatches[0];
+      if (localPick) {
+        setActivePulseId(localPick.id);
+        return localPick;
       }
       return null;
     },
@@ -320,10 +326,9 @@ export function PulseProvider({ children }) {
 
   async function endHostSession() {
     const ggSession = getGummyGumSession();
-    const matches = ggSession?.roomCode
-      ? pulses.filter((p) => p.accessCode === ggSession.roomCode)
-      : [];
-    const target = matches.find((p) => !isPulseEnded(p)) || matches[0] || null;
+    const target = ggSession?.roomCode
+      ? pickPulseForPin(pulses, ggSession.roomCode, ggSession.hostedSessionId || null)
+      : null;
     let report = null;
 
     if (target) {
@@ -527,6 +532,7 @@ export function PulseProvider({ children }) {
       createdAt: new Date().toISOString(),
       liveQIndex: 0,
       responses: [],
+      ...(ggSession?.isHost && ggSession.hostedSessionId ? { hostedSessionId: ggSession.hostedSessionId } : {}),
     };
 
     setPulses((prev) => [newPulse, ...prev]);
@@ -583,24 +589,33 @@ export function PulseProvider({ children }) {
     // from the hub, another device, etc.) mints a fresh launch token and
     // re-runs this on mount — reuse the pulse already tied to that room's
     // PIN instead of creating a duplicate every time.
-    const localMatches = pulses.filter((p) => p.accessCode === accessCode);
-    let existing = localMatches.find((p) => !isPulseEnded(p)) || null;
-    if (!existing && isFirebaseConfigured) {
-      const fetched = await fetchPulseByCode(accessCode);
-      if (fetched && !isPulseEnded(fetched)) {
+    // A re-run of the same PIN is a different hosted session and gets its own pulse.
+    const hostedSessionId = (ggSession?.isHost && ggSession.hostedSessionId) || null;
+    let existing = pickPulseForPin(pulses, accessCode, hostedSessionId);
+    if ((!existing || isPulseEnded(existing)) && isFirebaseConfigured) {
+      const fetched = await fetchPulseByCode(accessCode, hostedSessionId);
+      // A pulse this same hosted session ended stays ended (snapshot), so a duplicate tab can't reopen it.
+      if (fetched && (!isPulseEnded(fetched) || (hostedSessionId && !existing))) {
         existing = fetched;
         setPulses((prev) => [fetched, ...prev.filter((p) => p.id !== fetched.id)]);
       }
     }
-    if (existing) {
+    if (existing && !isPulseEnded(existing)) {
+      if (hostedSessionId && !existing.hostedSessionId) {
+        existing = { ...existing, hostedSessionId };
+        setPulses((prev) => prev.map((p) => (p.id === existing.id ? { ...p, hostedSessionId } : p)));
+        updatePulseFieldsInFirebase(existing.id, { hostedSessionId }).catch((err) =>
+          console.warn('Firebase hosted session tag fallback:', err)
+        );
+      }
       setActivePulseId(existing.id);
       setHostScreen(existing.delivery === 'live' ? 'live-session' : 'private-status');
       return existing;
     }
-    if (localMatches[0]) {
-      setActivePulseId(localMatches[0].id);
-      openSnapshot(localMatches[0].id);
-      return localMatches[0];
+    if (existing) {
+      setActivePulseId(existing.id);
+      openSnapshot(existing.id);
+      return existing;
     }
 
     const id = 'p_' + Math.random().toString(36).slice(2, 9);
@@ -620,6 +635,7 @@ export function PulseProvider({ children }) {
       createdAt: new Date().toISOString(),
       liveQIndex: 0,
       responses: [],
+      ...(hostedSessionId ? { hostedSessionId } : {}),
     };
 
     setPulses((prev) => [newPulse, ...prev]);
