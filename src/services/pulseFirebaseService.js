@@ -185,6 +185,36 @@ export async function savePulseToFirebase(pulse) {
   }
 }
 
+export function normalizeEmail(email) {
+  return String(email || '').trim().toLowerCase();
+}
+
+// Hashed so an anonymous pulse's response ids don't expose who answered.
+export function ggResponseId(email) {
+  const str = normalizeEmail(email);
+  if (!str) return null;
+  let h1 = 0xdeadbeef;
+  let h2 = 0x41c6ce57;
+  for (let i = 0; i < str.length; i++) {
+    const ch = str.charCodeAt(i);
+    h1 = Math.imul(h1 ^ ch, 2654435761);
+    h2 = Math.imul(h2 ^ ch, 1597334677);
+  }
+  h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+  h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+  return 'gg_' + (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(36);
+}
+
+export async function responseExists(pulseId, respId) {
+  if (!isFirebaseConfigured || !db || !pulseId || !respId) return false;
+  try {
+    const snap = await getDoc(doc(db, COLLECTION_NAME, pulseId, SUBCOLLECTION_RESPONSES, respId));
+    return snap.exists();
+  } catch {
+    return false;
+  }
+}
+
 /**
  * Submit an employee response to a pulse
  * Stores into subcollection `pulses/{pulseId}/responses/{responseId}` to prevent 1MB doc limits
@@ -195,6 +225,9 @@ export async function submitResponseToFirebase(pulseId, response) {
   try {
     const respId = response.id || 'r_' + Math.random().toString(36).slice(2, 9);
     const responseDocRef = doc(db, COLLECTION_NAME, pulseId, SUBCOLLECTION_RESPONSES, respId);
+
+    // An email-keyed response already on file is the same invitee resubmitting; keep the original.
+    if (respId.startsWith('gg_') && (await getDoc(responseDocRef)).exists()) return;
 
     // Save full detailed response to subcollection
     await setDoc(responseDocRef, { ...response, id: respId });

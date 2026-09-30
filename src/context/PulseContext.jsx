@@ -13,6 +13,8 @@ import {
   deletePulseFromFirebase,
   isPulseEnded,
   pickPulseForPin,
+  ggResponseId,
+  normalizeEmail,
 } from '../services/pulseFirebaseService';
 import { sendPulseInvitations } from '../services/emailService';
 import {
@@ -729,7 +731,7 @@ export function PulseProvider({ children }) {
     }
     const invited = activePulse.invitedEmployees || [];
     const ggSession = getGummyGumSession();
-    const ggEmail = ggSession?.player?.email?.toLowerCase();
+    const ggEmail = normalizeEmail(ggSession?.player?.email);
     if (invited.length === 0 || (ggEmail && typed === ggEmail)) {
       // Open Access Mode, or an identity GummyGum already verified for this room
       setVerifiedEmail(typed);
@@ -797,8 +799,10 @@ export function PulseProvider({ children }) {
       setEmpScreen('session-ended');
       return;
     }
+    const ggEmail = normalizeEmail(getGummyGumSession()?.player?.email);
+    // One response per invite email, so a rejoin from another device can't double-count.
     const submission = {
-      id: 'r_' + Math.random().toString(36).slice(2, 9),
+      id: (ggEmail && ggResponseId(ggEmail)) || 'r_' + Math.random().toString(36).slice(2, 9),
       answers: { ...empAnswers },
       submittedAt: new Date().toISOString(),
       isReal: true,
@@ -807,13 +811,15 @@ export function PulseProvider({ children }) {
 
     setPulses((prev) =>
       prev.map((p) =>
-        p.id === activePulse.id ? { ...p, responses: [...p.responses, submission] } : p
+        p.id === activePulse.id && !p.responses.some((r) => r.id === submission.id)
+          ? { ...p, responses: [...p.responses, submission] }
+          : p
       )
     );
     submitResponseToFirebase(activePulse.id, submission).catch((err) =>
       console.warn('Firebase response submit fallback:', err)
     );
-    setCompletedPulseIds((prev) => [...prev, activePulse.id]);
+    setCompletedPulseIds((prev) => (prev.includes(activePulse.id) ? prev : [...prev, activePulse.id]));
     setEmpScreen('completion');
   }
 

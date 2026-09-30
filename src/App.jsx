@@ -16,7 +16,7 @@ import { EmployeeView } from './components/employee/EmployeeView';
 import { PreviewModal } from './components/preview/PreviewModal';
 import { Toast } from './components/common/Toast';
 import { BgDeco } from './components/common/BgDeco';
-import { isPulseEnded } from './services/pulseFirebaseService';
+import { isPulseEnded, ggResponseId, normalizeEmail, responseExists } from './services/pulseFirebaseService';
 
 /**
  * Production Host Management Portal (Manager / Organizer view)
@@ -181,16 +181,22 @@ function EmployeeLayout() {
             found = await loadPulseByCode(ggRoomCode, hostedSessionId);
           }
         }
+        const respId = ggResponseId(ggSession?.player?.email);
+        const submittedElsewhere =
+          found && respId
+            ? (found.responses || []).some((r) => r.id === respId) || (await responseExists(found.id, respId))
+            : false;
         if (!found) {
           setEmpScreen('unavailable');
         } else if (isPulseEnded(found)) {
           setEmpScreen('session-ended');
-        } else if (completedPulseIds.includes(found.id)) {
+        } else if (completedPulseIds.includes(found.id) || submittedElsewhere) {
           setEmpScreen('already');
         } else {
-          if (ggSession?.player?.email) {
-            setEmailInput(ggSession.player.email);
-            setVerifiedEmail(ggSession.player.email);
+          const ggEmail = normalizeEmail(ggSession?.player?.email);
+          if (ggEmail) {
+            setEmailInput(ggEmail);
+            setVerifiedEmail(ggEmail);
           }
           setEmpScreen('instructions');
         }
