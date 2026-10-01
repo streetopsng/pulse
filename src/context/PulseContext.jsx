@@ -177,18 +177,21 @@ export function PulseProvider({ children }) {
     return () => window.removeEventListener('storage', handleStorageEvent);
   }, []);
 
-  // Real-time Firestore sync when configured
+  const { ggSession } = useGummyGum();
+  const hubPin = ggSession?.roomCode || null;
+
+  // Scoped to this room's PIN: the collection holds every organisation's pulses and responses.
   useEffect(() => {
-    if (!isFirebaseConfigured) return;
+    if (!isFirebaseConfigured || !hubPin) return;
 
     const unsubscribe = subscribeToPulses((firestorePulses) => {
       if (firestorePulses && firestorePulses.length > 0) {
         setPulses(firestorePulses);
       }
-    });
+    }, undefined, hubPin);
 
     return () => unsubscribe();
-  }, []);
+  }, [hubPin]);
 
   // Real-time subcollection responses sync for active pulse
   useEffect(() => {
@@ -226,9 +229,7 @@ export function PulseProvider({ children }) {
     return () => unsubscribe();
   }, [activePulseId]);
 
-  const { ggSession } = useGummyGum();
   const [hubEnded, setHubEnded] = useState(false);
-  const hubPin = ggSession?.roomCode || null;
   const hubHostedSessionId = ggSession?.hostedSessionId || null;
   const ggHostPulse =
     ggSession?.isHost && hubPin ? pickPulseForPin(pulses, hubPin, hubHostedSessionId) : null;
@@ -253,10 +254,7 @@ export function PulseProvider({ children }) {
     hubEndHandledRef.current = true;
     (async () => {
       if (ggHostPulse && !isPulseEnded(ggHostPulse)) {
-        const fields = {
-          status: getResponseCount(ggHostPulse) > 0 ? 'completed' : 'cancelled',
-          endedAt: new Date().toISOString(),
-        };
+        const fields = { status: 'cancelled', endedAt: new Date().toISOString() };
         setPulses((prev) => prev.map((p) => (p.id === ggHostPulse.id ? { ...p, ...fields } : p)));
         await updatePulseFieldsInFirebase(ggHostPulse.id, fields).catch((err) =>
           console.warn('Firebase status update fallback:', err)
@@ -378,12 +376,10 @@ export function PulseProvider({ children }) {
     let report = null;
 
     if (target) {
-      const completed = target.status === 'completed' || getResponseCount(target) > 0;
+      // Only finalised results count; ending before that cancels so no partial results reach GummyGum.
+      const completed = target.status === 'completed';
       if (!isPulseEnded(target)) {
-        const fields = {
-          status: completed ? 'completed' : 'cancelled',
-          endedAt: new Date().toISOString(),
-        };
+        const fields = { status: 'cancelled', endedAt: new Date().toISOString() };
         setPulses((prev) => prev.map((p) => (p.id === target.id ? { ...p, ...fields } : p)));
         await updatePulseFieldsInFirebase(target.id, fields).catch((err) =>
           console.warn('Firebase status update fallback:', err)
@@ -806,7 +802,8 @@ export function PulseProvider({ children }) {
       answers: { ...empAnswers },
       submittedAt: new Date().toISOString(),
       isReal: true,
-      respondentEmail: activePulse.privacy === 'identified' ? verifiedEmail : undefined,
+      // Firestore rejects undefined fields, so an anonymous response omits the key entirely.
+      ...(activePulse.privacy === 'identified' && verifiedEmail ? { respondentEmail: verifiedEmail } : {}),
     };
 
     setPulses((prev) =>
@@ -895,6 +892,7 @@ export function PulseProvider({ children }) {
         deletePulse,
         closePulse,
         endHostSession,
+        ggHostPulse,
         startCreate,
         pickTemplate,
         toggleBuilderQ,

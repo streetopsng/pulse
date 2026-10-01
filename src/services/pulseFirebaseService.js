@@ -9,6 +9,7 @@ import {
   where,
   getDocs,
   onSnapshot,
+  runTransaction,
 } from 'firebase/firestore';
 import { db, isFirebaseConfigured } from '../config/firebase';
 
@@ -47,14 +48,15 @@ const SUBCOLLECTION_RESPONSES = 'responses';
 /**
  * Subscribe to real-time updates for all pulses in Firestore
  */
-export function subscribeToPulses(callback, onError) {
+export function subscribeToPulses(callback, onError, accessCode = null) {
   if (!isFirebaseConfigured || !db) {
     return () => {};
   }
 
   const colRef = collection(db, COLLECTION_NAME);
+  const source = accessCode ? query(colRef, where('accessCode', '==', String(accessCode).trim())) : colRef;
   return onSnapshot(
-    colRef,
+    source,
     (snapshot) => {
       const pulsesList = [];
       snapshot.forEach((docSnap) => {
@@ -232,23 +234,23 @@ export async function submitResponseToFirebase(pulseId, response) {
     // Save full detailed response to subcollection
     await setDoc(responseDocRef, { ...response, id: respId });
 
-    // Also update response count on the parent pulse doc for lightweight queries
+    // Also update response count on the parent pulse doc for lightweight queries.
+    // A transaction, so participants submitting at the same moment don't overwrite each other's entry.
     try {
       const pulseDocRef = doc(db, COLLECTION_NAME, pulseId);
-      const pulseSnap = await getDoc(pulseDocRef);
-      if (pulseSnap.exists()) {
+      await runTransaction(db, async (tx) => {
+        const pulseSnap = await tx.get(pulseDocRef);
+        if (!pulseSnap.exists()) return;
         const currentData = pulseSnap.data();
         const existingResponses = currentData.responses || [];
-        const isAlreadyAdded = existingResponses.some((r) => r.id === respId);
-        if (!isAlreadyAdded) {
-          // Keep a capped list on parent doc for quick preview, but full data is in subcollection
-          const updatedSubset = [...existingResponses, response].slice(-100);
-          await updateDoc(pulseDocRef, {
-            responses: updatedSubset,
-            responseCount: (currentData.responseCount || existingResponses.length) + 1,
-          });
-        }
-      }
+        if (existingResponses.some((r) => r.id === respId)) return;
+        // Keep a capped list on parent doc for quick preview, but full data is in subcollection
+        const updatedSubset = [...existingResponses, { ...response, id: respId }].slice(-100);
+        tx.update(pulseDocRef, {
+          responses: updatedSubset,
+          responseCount: (currentData.responseCount || existingResponses.length) + 1,
+        });
+      });
     } catch {
       // Subcollection write succeeded, parent count update is secondary
     }
