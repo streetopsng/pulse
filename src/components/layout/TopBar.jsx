@@ -5,7 +5,8 @@ import { useGummyGum } from '../../context/GummyGumContext';
 import { ConfirmationModal } from '../common/ConfirmationModal';
 
 export function TopBar() {
-  const { hostScreen, setHostScreen, endHostSession } = usePulse();
+  const { hostScreen, setHostScreen, endHostSession, ggHostPulse } = usePulse();
+  const finalised = ggHostPulse?.status === 'completed';
   const { ggSession } = useGummyGum();
   const [confirmEndOpen, setConfirmEndOpen] = useState(false);
   const [ending, setEnding] = useState(false);
@@ -105,7 +106,11 @@ export function TopBar() {
       <ConfirmationModal
         isOpen={confirmEndOpen}
         title="End this session?"
-        message="Everyone will be removed and the session will close in GummyGum. Responses collected so far are kept as the final results."
+        message={
+          finalised
+            ? 'Everyone will be removed and the session will close in GummyGum.'
+            : "Everyone will be removed and the session will close in GummyGum. Results haven't been finalised, so this session won't be recorded as completed."
+        }
         confirmText={ending ? 'Ending...' : 'End session'}
         cancelText="Keep running"
         onConfirm={handleConfirmEnd}
