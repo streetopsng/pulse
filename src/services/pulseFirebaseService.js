@@ -1,17 +1,15 @@
+import { collection, doc, query, where } from 'firebase/firestore';
 import {
-  collection,
-  doc,
+  db,
+  isFirebaseConfigured,
   setDoc,
   getDoc,
   updateDoc,
   deleteDoc,
-  query,
-  where,
   getDocs,
   onSnapshot,
   runTransaction,
-} from 'firebase/firestore';
-import { db, isFirebaseConfigured } from '../config/firebase';
+} from '../config/firebase';
 
 const COLLECTION_NAME = 'pulses';
 

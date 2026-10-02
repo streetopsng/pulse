@@ -1,6 +1,16 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
-import { getFirestore, initializeFirestore } from 'firebase/firestore';
-import { getAuth } from 'firebase/auth';
+import {
+  getFirestore,
+  initializeFirestore,
+  getDoc as rawGetDoc,
+  getDocs as rawGetDocs,
+  setDoc as rawSetDoc,
+  updateDoc as rawUpdateDoc,
+  deleteDoc as rawDeleteDoc,
+  runTransaction as rawRunTransaction,
+  onSnapshot as rawOnSnapshot,
+} from 'firebase/firestore';
+import { getAuth, signInAnonymously } from 'firebase/auth';
 import { getAnalytics, isSupported } from 'firebase/analytics';
 
 const firebaseConfig = {
@@ -64,6 +74,34 @@ if (isFirebaseConfigured) {
   } catch (error) {
     console.error('Failed to initialize Firebase:', error);
   }
+}
+
+// The anonymous uid only satisfies the Firestore rules (request.auth != null); it is not the participant identity.
+// Never rejects, so the app keeps working under open rules if the Anonymous provider isn't enabled yet.
+export const authReady = auth
+  ? auth.authStateReady()
+      .then(() => auth.currentUser || signInAnonymously(auth))
+      .then(() => undefined)
+      .catch((err) => console.warn('Firebase anonymous sign-in failed, continuing without auth:', err))
+  : Promise.resolve();
+
+export const getDoc = (...args) => authReady.then(() => rawGetDoc(...args));
+export const getDocs = (...args) => authReady.then(() => rawGetDocs(...args));
+export const setDoc = (...args) => authReady.then(() => rawSetDoc(...args));
+export const updateDoc = (...args) => authReady.then(() => rawUpdateDoc(...args));
+export const deleteDoc = (...args) => authReady.then(() => rawDeleteDoc(...args));
+export const runTransaction = (...args) => authReady.then(() => rawRunTransaction(...args));
+
+export function onSnapshot(...args) {
+  let unsubscribe = null;
+  let cancelled = false;
+  authReady.then(() => {
+    if (!cancelled) unsubscribe = rawOnSnapshot(...args);
+  });
+  return () => {
+    cancelled = true;
+    unsubscribe?.();
+  };
 }
 
 export { app, db, auth, analytics };
