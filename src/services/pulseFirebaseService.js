@@ -1,4 +1,4 @@
-import { collection, doc, query, where } from 'firebase/firestore';
+import { collection, doc, increment, query, where } from 'firebase/firestore';
 import {
   db,
   isFirebaseConfigured,
@@ -8,12 +8,12 @@ import {
   deleteDoc,
   getDocs,
   onSnapshot,
-  runTransaction,
 } from '../config/firebase';
 
 const COLLECTION_NAME = 'pulses';
 
 export const ENDED_STATUSES = ['completed', 'cancelled'];
+export const PULSE_ENDED = 'pulse-ended';
 
 export function isPulseEnded(pulse) {
   return Boolean(pulse) && ENDED_STATUSES.includes(pulse.status);
@@ -166,6 +166,17 @@ export async function fetchPulseById(pulseId) {
   }
 }
 
+// One read for a participant who holds no listener: tells a finalised survey from a cancelled session.
+export async function fetchPulseStatus(pulseId) {
+  if (!isFirebaseConfigured || !db || !pulseId) return null;
+  try {
+    const snap = await getDoc(doc(db, COLLECTION_NAME, pulseId));
+    return snap.exists() ? snap.data().status || null : null;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Fetch a pulse by 6-digit access code (PIN)
  */
@@ -249,6 +260,13 @@ export async function submitResponseToFirebase(pulseId, response) {
   try {
     const respId = response.id || 'r_' + Math.random().toString(36).slice(2, 9);
     const responseDocRef = doc(db, COLLECTION_NAME, pulseId, SUBCOLLECTION_RESPONSES, respId);
+    const pulseDocRef = doc(db, COLLECTION_NAME, pulseId);
+
+    // Participants don't listen to the pulse, so the end is checked here; a failed check doesn't block the answer.
+    const current = await getDoc(pulseDocRef).catch(() => null);
+    if (current?.exists() && isPulseEnded(current.data())) {
+      throw Object.assign(new Error('This pulse has ended'), { code: PULSE_ENDED, status: current.data().status });
+    }
 
     // An email-keyed response already on file is the same invitee resubmitting; keep the original.
     const alreadyOnFile = await withRetry('Submit response', async () => {
@@ -258,23 +276,9 @@ export async function submitResponseToFirebase(pulseId, response) {
     });
     if (alreadyOnFile) return;
 
-    // Also update response count on the parent pulse doc for lightweight queries.
-    // A transaction, so participants submitting at the same moment don't overwrite each other's entry.
+    // Only the count goes on the pulse doc: answers copied there were handed to every participant who loaded it.
     try {
-      const pulseDocRef = doc(db, COLLECTION_NAME, pulseId);
-      await runTransaction(db, async (tx) => {
-        const pulseSnap = await tx.get(pulseDocRef);
-        if (!pulseSnap.exists()) return;
-        const currentData = pulseSnap.data();
-        const existingResponses = currentData.responses || [];
-        if (existingResponses.some((r) => r.id === respId)) return;
-        // Keep a capped list on parent doc for quick preview, but full data is in subcollection
-        const updatedSubset = [...existingResponses, { ...response, id: respId }].slice(-100);
-        tx.update(pulseDocRef, {
-          responses: updatedSubset,
-          responseCount: (currentData.responseCount || existingResponses.length) + 1,
-        });
-      });
+      await updateDoc(pulseDocRef, { responseCount: increment(1) });
     } catch {
       // Subcollection write succeeded, parent count update is secondary
     }
