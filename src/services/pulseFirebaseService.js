@@ -43,6 +43,24 @@ export function pickPulseForPin(pulses, code, hostedSessionId) {
 }
 const SUBCOLLECTION_RESPONSES = 'responses';
 
+const ATTEMPTS = 5;
+const RETRY_DELAY_MS = 1000;
+
+async function withRetry(label, run) {
+  let lastError = null;
+  for (let attempt = 0; attempt < ATTEMPTS; attempt++) {
+    try {
+      return await run(attempt);
+    } catch (error) {
+      lastError = error;
+      console.warn(`${label} failed (attempt ${attempt + 1}):`, error);
+      if (error?.code === 'permission-denied' || error?.code === 'not-found') break;
+      if (attempt < ATTEMPTS - 1) await new Promise((r) => setTimeout(r, RETRY_DELAY_MS));
+    }
+  }
+  throw lastError;
+}
+
 /**
  * Subscribe to real-time updates for all pulses in Firestore
  */
@@ -151,14 +169,15 @@ export async function fetchPulseById(pulseId) {
 /**
  * Fetch a pulse by 6-digit access code (PIN)
  */
-export async function fetchPulseByCode(code, hostedSessionId = null) {
+// strict rethrows a failed read, for callers that must not mistake it for "no pulse yet".
+export async function fetchPulseByCode(code, hostedSessionId = null, { strict = false } = {}) {
   if (!isFirebaseConfigured || !db || !code) return null;
 
   try {
     const cleanCode = code.toString().trim();
     const colRef = collection(db, COLLECTION_NAME);
     const q = query(colRef, where('accessCode', '==', cleanCode));
-    const snapshot = await getDocs(q);
+    const snapshot = strict ? await withRetry('Fetch pulse by code', () => getDocs(q)) : await getDocs(q);
 
     if (snapshot.empty) return null;
 
@@ -166,6 +185,7 @@ export async function fetchPulseByCode(code, hostedSessionId = null) {
     return pickPulseForPin(matches, cleanCode, hostedSessionId);
   } catch (error) {
     console.error('Failed to fetch pulse by code:', error);
+    if (strict) throw error;
     return null;
   }
 }
@@ -178,7 +198,11 @@ export async function savePulseToFirebase(pulse) {
 
   try {
     const docRef = doc(db, COLLECTION_NAME, pulse.id);
-    await setDoc(docRef, pulse, { merge: true });
+    await withRetry('Save pulse', async (attempt) => {
+      // An earlier attempt may have landed; merging again would reset responses recorded since.
+      if (attempt > 0 && (await getDoc(docRef)).exists()) return;
+      await setDoc(docRef, pulse, { merge: true });
+    });
   } catch (error) {
     console.error('Failed to save pulse to Firebase:', error);
     throw error;
@@ -227,10 +251,12 @@ export async function submitResponseToFirebase(pulseId, response) {
     const responseDocRef = doc(db, COLLECTION_NAME, pulseId, SUBCOLLECTION_RESPONSES, respId);
 
     // An email-keyed response already on file is the same invitee resubmitting; keep the original.
-    if (respId.startsWith('gg_') && (await getDoc(responseDocRef)).exists()) return;
-
-    // Save full detailed response to subcollection
-    await setDoc(responseDocRef, { ...response, id: respId });
+    const alreadyOnFile = await withRetry('Submit response', async () => {
+      if (respId.startsWith('gg_') && (await getDoc(responseDocRef)).exists()) return true;
+      await setDoc(responseDocRef, { ...response, id: respId });
+      return false;
+    });
+    if (alreadyOnFile) return;
 
     // Also update response count on the parent pulse doc for lightweight queries.
     // A transaction, so participants submitting at the same moment don't overwrite each other's entry.
@@ -278,7 +304,7 @@ export async function updatePulseFieldsInFirebase(pulseId, fields) {
 
   try {
     const docRef = doc(db, COLLECTION_NAME, pulseId);
-    await updateDoc(docRef, fields);
+    await withRetry('Update pulse', () => updateDoc(docRef, fields));
   } catch (error) {
     console.error('Failed to update pulse in Firebase:', error);
     throw error;

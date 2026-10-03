@@ -126,6 +126,7 @@ export function PulseProvider({ children }) {
 
   // Toast state
   const [toastMsg, setToastMsg] = useState(null);
+  const [syncError, setSyncError] = useState(null);
 
   const activePulse = pulses.find((p) => p.id === activePulseId) || pulses[0] || null;
   const snapshotPulse = pulses.find((p) => p.id === snapshotPulseId) || pulses[0] || null;
@@ -194,8 +195,10 @@ export function PulseProvider({ children }) {
   }, [hubPin]);
 
   // Real-time subcollection responses sync for active pulse
+  const isGgParticipant = Boolean(ggSession) && !ggSession.isHost;
   useEffect(() => {
-    if (!isFirebaseConfigured || !activePulseId) return;
+    // Only the host shows results; a participant has no use for everyone else's answers.
+    if (!isFirebaseConfigured || !activePulseId || isGgParticipant) return;
 
     const unsubscribe = subscribeToResponses(activePulseId, (subResponses) => {
       if (subResponses && subResponses.length > 0) {
@@ -206,7 +209,7 @@ export function PulseProvider({ children }) {
     });
 
     return () => unsubscribe();
-  }, [activePulseId]);
+  }, [activePulseId, isGgParticipant]);
 
   // Detect the host ending or deleting the active pulse in real time so a
   // connected participant mid-flow doesn't freeze on a stale screen.
@@ -257,7 +260,7 @@ export function PulseProvider({ children }) {
         const fields = { status: 'cancelled', endedAt: new Date().toISOString() };
         setPulses((prev) => prev.map((p) => (p.id === ggHostPulse.id ? { ...p, ...fields } : p)));
         await updatePulseFieldsInFirebase(ggHostPulse.id, fields).catch((err) =>
-          console.warn('Firebase status update fallback:', err)
+          console.warn('Firebase status update failed:', err)
         );
       }
       leaveToGummyGumHub();
@@ -359,9 +362,10 @@ export function PulseProvider({ children }) {
     const target = pulses.find((p) => p.id === id);
     const fields = { status: 'completed', endedAt: new Date().toISOString() };
     setPulses((prev) => prev.map((p) => (p.id === id ? { ...p, ...fields } : p)));
-    updatePulseFieldsInFirebase(id, fields).catch((err) =>
-      console.warn('Firebase status update fallback:', err)
-    );
+    updatePulseFieldsInFirebase(id, fields).catch((err) => {
+      console.warn('Firebase status update failed:', err);
+      setSyncError("The survey closed here, but we couldn't reach the server, so participants may still see it as open. Check your connection.");
+    });
     if (isGummyGumHostPulse(target)) {
       reportGummyGumResult(buildPulseReport({ ...target, ...fields }));
     }
@@ -635,7 +639,14 @@ export function PulseProvider({ children }) {
     const hostedSessionId = (ggSession?.isHost && ggSession.hostedSessionId) || null;
     let existing = pickPulseForPin(pulses, accessCode, hostedSessionId);
     if ((!existing || isPulseEnded(existing)) && isFirebaseConfigured) {
-      const fetched = await fetchPulseByCode(accessCode, hostedSessionId);
+      let fetched = null;
+      try {
+        fetched = await fetchPulseByCode(accessCode, hostedSessionId, { strict: true });
+      } catch {
+        // Treating a failed read as "no pulse yet" would launch a duplicate and strand everyone on the first one.
+        setSyncError("We couldn't reach the server to load your Pulse. Check your connection and reload this page.");
+        return null;
+      }
       // A pulse this same hosted session ended stays ended (snapshot), so a duplicate tab can't reopen it.
       if (fetched && (!isPulseEnded(fetched) || (hostedSessionId && !existing))) {
         existing = fetched;
@@ -684,9 +695,16 @@ export function PulseProvider({ children }) {
     setActivePulseId(id);
     setHostScreen(delivery === 'live' ? 'live-session' : 'private-status');
 
-    savePulseToFirebase(newPulse).catch((err) =>
-      console.warn('Firebase save fallback:', err)
-    );
+    try {
+      await savePulseToFirebase(newPulse);
+    } catch (err) {
+      console.warn('Firebase save failed:', err);
+      // Dropped locally too, so a reload launches it again instead of reusing a pulse nobody else can see.
+      setPulses((prev) => prev.filter((p) => p.id !== id));
+      setHostScreen('loading');
+      setSyncError("Your Pulse didn't reach the server, so nobody can join it. Check your connection and reload this page.");
+      return null;
+    }
 
     // GummyGum already emailed these people a personalized, identity-aware
     // invite link when the host launched — sending Pulse's own native Brevo
@@ -806,16 +824,28 @@ export function PulseProvider({ children }) {
       ...(activePulse.privacy === 'identified' && verifiedEmail ? { respondentEmail: verifiedEmail } : {}),
     };
 
+    const pulseId = activePulse.id;
     setPulses((prev) =>
       prev.map((p) =>
-        p.id === activePulse.id && !p.responses.some((r) => r.id === submission.id)
-          ? { ...p, responses: [...p.responses, submission] }
+        p.id === pulseId && !(p.responses || []).some((r) => r.id === submission.id)
+          ? { ...p, responses: [...(p.responses || []), submission] }
           : p
       )
     );
-    submitResponseToFirebase(activePulse.id, submission).catch((err) =>
-      console.warn('Firebase response submit fallback:', err)
-    );
+    submitResponseToFirebase(pulseId, submission)
+      .then(() => setSyncError(null))
+      .catch((err) => {
+        console.warn('Firebase response submit failed:', err);
+        // Showing "thanks" for answers that never arrived would lose them for good.
+        setPulses((prev) =>
+          prev.map((p) =>
+            p.id === pulseId ? { ...p, responses: (p.responses || []).filter((r) => r.id !== submission.id) } : p
+          )
+        );
+        setCompletedPulseIds((prev) => prev.filter((x) => x !== pulseId));
+        setEmpScreen((current) => (current === 'completion' ? 'question' : current));
+        setSyncError("Your answers didn't send. Check your connection and submit again.");
+      });
     setCompletedPulseIds((prev) => (prev.includes(activePulse.id) ? prev : [...prev, activePulse.id]));
     setEmpScreen('completion');
   }
@@ -886,6 +916,8 @@ export function PulseProvider({ children }) {
         setCommentFilter,
         showToast,
         toastMsg,
+        syncError,
+        setSyncError,
         // Host actions
         openPulseCard,
         openSnapshot,
