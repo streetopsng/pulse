@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Button } from '../common/Button';
 import { ConfirmationModal } from '../common/ConfirmationModal';
 import { Card } from '../common/Card';
-import { ClipboardIcon, LinkIcon, ArrowLeftIcon } from '../common/Icons';
+import { ClipboardIcon, LinkIcon } from '../common/Icons';
 import { usePulse } from '../../context/PulseContext';
 
 export function PrivateStatus() {
@@ -10,7 +10,6 @@ export function PrivateStatus() {
     activePulse,
     closePulse,
     openSnapshot,
-    setHostScreen,
     showToast,
     isFromGummyGum,
   } = usePulse();
@@ -22,9 +21,6 @@ export function PrivateStatus() {
         <p className="text-sm font-bold text-ink-soft mb-4">
           No private survey is currently active.
         </p>
-        <Button variant="primary" onClick={() => setHostScreen('home')}>
-          Return to Pulses
-        </Button>
       </div>
     );
   }
@@ -125,13 +121,6 @@ export function PrivateStatus() {
 
       {/* Nav */}
       <div className="text-center">
-        <button
-          type="button"
-          onClick={() => setHostScreen('home')}
-          className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-indigo-600 transition-colors cursor-pointer"
-        >
-          <ArrowLeftIcon /> Back to your pulses
-        </button>
       </div>
       <ConfirmationModal
         isOpen={confirmFinalizeOpen}

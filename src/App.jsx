@@ -16,6 +16,7 @@ import { EmployeeView } from './components/employee/EmployeeView';
 import { PreviewModal } from './components/preview/PreviewModal';
 import { Toast } from './components/common/Toast';
 import { BgDeco } from './components/common/BgDeco';
+import { LoadingScreen } from './components/common/LoadingScreen';
 import { isPulseEnded, ggResponseId, normalizeEmail, responseExists } from './services/pulseFirebaseService';
 
 /**
@@ -24,26 +25,17 @@ import { isPulseEnded, ggResponseId, normalizeEmail, responseExists } from './se
  */
 function HostLayout() {
   const { ggSession } = useGummyGum();
-  const { hostScreen, setHostScreen, deployPulseFromGummyGum } = usePulse();
+  const { hostScreen, deployPulseFromGummyGum } = usePulse();
   const deployedRef = useRef(false);
 
-  // A host GummyGum already authenticated skips the marketing splash. If
-  // they built their survey entirely in GummyGum's setup modal (the normal
-  // path now), deploy straight from that config and land on the live
-  // session / private status screen — never home, welcome, or the native
-  // builder. Only a host with no config (shouldn't normally happen once
-  // this is live) falls back to the old "land on home, use native builder"
-  // behavior.
+  // The survey is built in GummyGum's setup modal, so deploy straight from that
+  // config and land on the live session / private status screen.
   useEffect(() => {
-    if (!ggSession?.isHost || hostScreen !== 'welcome') return;
-    if (ggSession.config) {
-      if (deployedRef.current) return;
-      deployedRef.current = true;
-      deployPulseFromGummyGum(ggSession.config);
-    } else {
-      setHostScreen('home');
-    }
-  }, [ggSession, hostScreen, setHostScreen, deployPulseFromGummyGum]);
+    if (!ggSession?.isHost || !ggSession.config || hostScreen !== 'loading') return;
+    if (deployedRef.current) return;
+    deployedRef.current = true;
+    deployPulseFromGummyGum(ggSession.config);
+  }, [ggSession, hostScreen, deployPulseFromGummyGum]);
 
   return (
     <div className="relative min-h-screen flex flex-col z-10">
@@ -54,6 +46,26 @@ function HostLayout() {
       </main>
       <PreviewModal />
       <Toast />
+    </div>
+  );
+}
+
+function GummyGumLockedScreen() {
+  return (
+    <div className="relative min-h-screen w-full flex items-center justify-center bg-slate-50 p-6 z-10">
+      <BgDeco />
+      <div className="relative bg-white border border-slate-200 rounded-2xl w-full max-w-[400px] mx-auto p-8 text-center shadow-sm">
+        <h1 className="text-slate-900 text-xl font-bold mb-3">Locked</h1>
+        <p className="text-slate-500 text-[15px] mb-6 leading-relaxed">
+          This experience is only available through GummyGum.
+        </p>
+        <a
+          href="https://gummygum.app"
+          className="inline-flex items-center justify-center px-6 py-2.5 rounded-full bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold shadow-sm transition-all"
+        >
+          Go to GummyGum
+        </a>
+      </div>
     </div>
   );
 }
@@ -75,7 +87,7 @@ function RootRoute() {
   const { ggAccessState, ggSession } = useGummyGum();
 
   if (ggAccessState === 'checking') {
-    return <div className="min-h-screen w-full bg-slate-50" />;
+    return <LoadingScreen fullScreen />;
   }
 
   // A participant whose launch token failed to verify still came from a GummyGum invite.
@@ -84,23 +96,7 @@ function RootRoute() {
   }
 
   if (ggAccessState === 'denied') {
-    return (
-      <div className="relative min-h-screen w-full flex items-center justify-center bg-slate-50 p-6 z-10">
-        <BgDeco />
-        <div className="relative bg-white border border-slate-200 rounded-2xl w-full max-w-[400px] mx-auto p-8 text-center shadow-sm">
-          <h1 className="text-slate-900 text-xl font-bold mb-3">Locked</h1>
-          <p className="text-slate-500 text-[15px] mb-6 leading-relaxed">
-            This experience is only available through GummyGum.
-          </p>
-          <a
-            href="https://gummygum.app"
-            className="inline-flex items-center justify-center px-6 py-2.5 rounded-full bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold shadow-sm transition-all"
-          >
-            Go to GummyGum
-          </a>
-        </div>
-      </div>
-    );
+    return <GummyGumLockedScreen />;
   }
 
   if (ggSession && !ggSession.isHost) {
@@ -117,8 +113,7 @@ function RootRoute() {
  * a GummyGum-verified identity, in which case the manual code/email steps
  * are skipped entirely since GummyGum already resolved who this is and
  * which room they belong to.
- * Never gated: this stays reachable directly (e.g. a native Brevo email
- * invite) whether or not a GummyGum session is active.
+ * A visit with no launch, pulse id or code shows the GummyGum locked screen.
  */
 function EmployeeLayout() {
   const { pulseId: routePulseId, code: routeCode } = useParams();
@@ -129,6 +124,7 @@ function EmployeeLayout() {
     loadPulseByCode,
     setEmailInput,
     setVerifiedEmail,
+    empScreen,
     setEmpScreen,
     completedPulseIds,
   } = usePulse();
@@ -212,12 +208,12 @@ function EmployeeLayout() {
     if (targetId || targetCode) {
       const load = targetId ? loadPulseById(targetId) : loadPulseByCode(targetCode);
       load.then((found) => {
-        if (!found) setEmpScreen('entry');
+        if (!found) setEmpScreen('unavailable');
         else if (isPulseEnded(found)) setEmpScreen('session-ended');
         else setEmpScreen('invite');
       });
     } else {
-      setEmpScreen('entry');
+      setEmpScreen('locked');
     }
   }, [
     ggAccessState,
@@ -232,6 +228,10 @@ function EmployeeLayout() {
     setEmpScreen,
     completedPulseIds,
   ]);
+
+  if (empScreen === 'locked') {
+    return <GummyGumLockedScreen />;
+  }
 
   return (
     <div className="relative min-h-screen flex flex-col z-10">

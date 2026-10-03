@@ -1,6 +1,4 @@
 import { SurveyContainer } from '../layout/SurveyContainer';
-import { EntryScreen } from './screens/EntryScreen';
-import { JoinScreen } from './screens/JoinScreen';
 import { InviteScreen } from './screens/InviteScreen';
 import { VerifyEmailScreen } from './screens/VerifyEmailScreen';
 import { InstructionsScreen } from './screens/InstructionsScreen';
@@ -9,16 +7,8 @@ import { CompletionScreen } from './screens/CompletionScreen';
 import { AlreadyScreen } from './screens/AlreadyScreen';
 import { SessionEndedScreen } from './screens/SessionEndedScreen';
 import { Button } from '../common/Button';
+import { LoadingScreen } from '../common/LoadingScreen';
 import { usePulse } from '../../context/PulseContext';
-
-function LoadingScreen() {
-  return (
-    <div className="text-center py-10 sm:py-14">
-      <div className="w-10 h-10 rounded-full border-2 border-purple-200 border-t-purple-600 animate-spin mx-auto mb-4" />
-      <p className="text-sm font-medium text-slate-500">Opening your pulse survey...</p>
-    </div>
-  );
-}
 
 function UnavailableScreen() {
   return (
@@ -50,8 +40,6 @@ export function EmployeeView() {
     <SurveyContainer badgeText={badgeText}>
       {empScreen === 'loading' && <LoadingScreen />}
       {empScreen === 'unavailable' && <UnavailableScreen />}
-      {empScreen === 'entry' && <EntryScreen />}
-      {empScreen === 'join' && <JoinScreen />}
       {empScreen === 'invite' && <InviteScreen />}
       {empScreen === 'verify-email' && <VerifyEmailScreen />}
       {(empScreen === 'instructions' || empScreen === 'welcome') && <InstructionsScreen />}

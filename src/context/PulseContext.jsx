@@ -106,12 +106,12 @@ export function PulseProvider({ children }) {
   const [snapshotPulseId, setSnapshotPulseId] = useState(() => pulses[1]?.id || null);
 
   const [topView, setTopViewState] = useState('host'); // 'host' | 'employee'
-  const [hostScreen, setHostScreen] = useState('welcome');
+  const [hostScreen, setHostScreen] = useState('loading');
   const [draft, setDraft] = useState(createBlankDraft);
   const [commentFilter, setCommentFilter] = useState('all');
 
   // Employee state
-  const [empScreen, setEmpScreen] = useState('invite');
+  const [empScreen, setEmpScreen] = useState('loading');
   const [emailInput, setEmailInput] = useState('');
   const [emailError, setEmailError] = useState(null);
   const [verifiedEmail, setVerifiedEmail] = useState(null);
@@ -220,7 +220,7 @@ export function PulseProvider({ children }) {
       if (exists ? !isPulseEnded({ status }) : !seenExisting) return;
       // Before a pulse is resolved the active id can still point at an unrelated local pulse.
       setEmpScreen((current) =>
-        ['session-ended', 'loading', 'unavailable', 'entry', 'join'].includes(current)
+        ['session-ended', 'loading', 'unavailable', 'locked'].includes(current)
           ? current
           : 'session-ended'
       );
@@ -324,7 +324,7 @@ export function PulseProvider({ children }) {
           setEmpScreen('invite');
         }
       } else {
-        setEmpScreen('entry');
+        setEmpScreen('loading');
       }
     }
   }

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Button } from '../common/Button';
 import { ConfirmationModal } from '../common/ConfirmationModal';
-import { PeopleIcon, ClipboardIcon, BoltIcon, CalendarIcon, LinkIcon, ArrowLeftIcon, ArrowRightIcon } from '../common/Icons';
+import { PeopleIcon, ClipboardIcon, BoltIcon, CalendarIcon, LinkIcon, ArrowRightIcon } from '../common/Icons';
 import { computeSnapshot } from '../../utils/analytics';
 import { usePulse } from '../../context/PulseContext';
 
@@ -10,7 +10,6 @@ export function LiveSession() {
     activePulse,
     nextLiveQuestion,
     endLivePulse,
-    setHostScreen,
     showToast,
     isFromGummyGum,
   } = usePulse();
@@ -22,9 +21,6 @@ export function LiveSession() {
         <p className="text-sm font-bold text-ink-soft mb-4">
           No live session is currently active.
         </p>
-        <Button variant="primary" onClick={() => setHostScreen('home')}>
-          Return to Pulses
-        </Button>
       </div>
     );
   }
@@ -263,13 +259,6 @@ export function LiveSession() {
         <p className="text-xs text-slate-400 font-medium mb-2">
           Invited by email · {totalInvited} participants
         </p>
-        <button
-          type="button"
-          onClick={() => setHostScreen('home')}
-          className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-indigo-600 transition-colors cursor-pointer"
-        >
-          <ArrowLeftIcon /> Back to your pulses
-        </button>
       </div>
       <ConfirmationModal
         isOpen={confirmFinalizeOpen}

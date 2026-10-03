@@ -1,11 +1,10 @@
 import { useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { usePulse } from '../../context/PulseContext';
 import { useGummyGum } from '../../context/GummyGumContext';
 import { ConfirmationModal } from '../common/ConfirmationModal';
 
 export function TopBar() {
-  const { hostScreen, setHostScreen, endHostSession, ggHostPulse } = usePulse();
+  const { endHostSession, ggHostPulse } = usePulse();
   const finalised = ggHostPulse?.status === 'completed';
   const { ggSession } = useGummyGum();
   const [confirmEndOpen, setConfirmEndOpen] = useState(false);
@@ -30,44 +29,14 @@ export function TopBar() {
       <header className="sticky top-0 z-30 bg-white/85 backdrop-blur-md border-b border-slate-200/80 px-4 sm:px-8 py-3.5 flex items-center justify-between gap-4 transition-all">
         {/* Brand & Context */}
         <div className="flex items-center gap-4 sm:gap-6">
-          <Link
-            to="/"
-            onClick={() => setHostScreen('home')}
-            className="flex items-center gap-2 group cursor-pointer"
-          >
+          <div className="flex items-center gap-2">
             <span className="font-bold text-xl tracking-tight text-slate-900">
               Pulse
             </span>
             <span className="hidden sm:inline-flex text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-md bg-purple-50 text-purple-700 border border-purple-200/70">
               Enterprise
             </span>
-          </Link>
-
-          {/* Navigation Tabs */}
-          <nav className="hidden md:flex items-center gap-1 border-l border-slate-200 pl-4">
-            <button
-              type="button"
-              onClick={() => setHostScreen('home')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
-                hostScreen === 'home'
-                  ? 'text-purple-700 bg-purple-50'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70'
-              }`}
-            >
-              Dashboard
-            </button>
-            <button
-              type="button"
-              onClick={() => setHostScreen('home')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
-                hostScreen === 'snapshot'
-                  ? 'text-purple-700 bg-purple-50'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70'
-              }`}
-            >
-              Analytics
-            </button>
-          </nav>
+          </div>
         </div>
 
         {/* Right Controls: Host User Pill */}

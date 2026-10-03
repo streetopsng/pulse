@@ -1,7 +1,6 @@
 import { Card } from '../common/Card';
 import { Chip } from '../common/Chip';
-import { Button } from '../common/Button';
-import { CheckIcon, BoltIcon, ArrowLeftIcon } from '../common/Icons';
+import { CheckIcon, BoltIcon } from '../common/Icons';
 import { QTYPES } from '../../constants/questionTypes';
 import { computeSnapshot } from '../../utils/analytics';
 import { usePulse } from '../../context/PulseContext';
@@ -11,7 +10,6 @@ export function SnapshotView() {
     snapshotPulse,
     commentFilter,
     setCommentFilter,
-    setHostScreen,
   } = usePulse();
 
   if (!snapshotPulse) {
@@ -20,9 +18,6 @@ export function SnapshotView() {
         <p className="text-sm font-bold text-ink-soft mb-4">
           No pulse selected for snapshot.
         </p>
-        <Button variant="primary" onClick={() => setHostScreen('home')}>
-          Back to Pulses
-        </Button>
       </div>
     );
   }
@@ -43,13 +38,6 @@ export function SnapshotView() {
     <div className="max-w-5xl mx-auto px-4 sm:px-8 py-8 sm:py-12">
       {/* Top Breadcrumb */}
       <div className="mb-4">
-        <button
-          type="button"
-          onClick={() => setHostScreen('home')}
-          className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-extrabold text-ink underline underline-offset-4 decoration-accent decoration-2 hover:text-accent-dark cursor-pointer"
-        >
-          <ArrowLeftIcon /> All pulses
-        </button>
       </div>
 
       {/* Header Banner */}
@@ -274,9 +262,6 @@ export function SnapshotView() {
 
       {/* Footer Back Button */}
       <div>
-        <Button variant="ghost" onClick={() => setHostScreen('home')}>
-          <ArrowLeftIcon className="w-3.5 h-3.5 mr-1.5" /> Back to your pulses
-        </Button>
       </div>
     </div>
   );
