@@ -7,11 +7,13 @@ import {
   subscribeToPulseDoc,
   fetchPulseById,
   fetchPulseByCode,
+  fetchPulseStatus,
   savePulseToFirebase,
   submitResponseToFirebase,
   updatePulseFieldsInFirebase,
   deletePulseFromFirebase,
   isPulseEnded,
+  PULSE_ENDED,
   pickPulseForPin,
   ggResponseId,
   normalizeEmail,
@@ -181,21 +183,31 @@ export function PulseProvider({ children }) {
   const { ggSession } = useGummyGum();
   const hubPin = ggSession?.roomCode || null;
 
+  // A participant loads the survey once and learns the session ended from the hub poll, so it holds no
+  // listener on the pulse: every submit updates that doc, and each update went to everyone in the room.
+  const isGgParticipant = Boolean(ggSession) && !ggSession.isHost;
+  const participantFollowsHub = isGgParticipant && Boolean(hubPin && ggSession.hostedSessionId);
+
   // Scoped to this room's PIN: the collection holds every organisation's pulses and responses.
   useEffect(() => {
-    if (!isFirebaseConfigured || !hubPin) return;
+    if (!isFirebaseConfigured || !hubPin || participantFollowsHub) return;
 
     const unsubscribe = subscribeToPulses((firestorePulses) => {
       if (firestorePulses && firestorePulses.length > 0) {
-        setPulses(firestorePulses);
+        // The pulse doc carries a count, not the answers; keep the ones the responses listener loaded.
+        setPulses((prev) =>
+          firestorePulses.map((fp) => {
+            const held = prev.find((p) => p.id === fp.id)?.responses || [];
+            return held.length > (fp.responses?.length || 0) ? { ...fp, responses: held } : fp;
+          })
+        );
       }
     }, undefined, hubPin);
 
     return () => unsubscribe();
-  }, [hubPin]);
+  }, [hubPin, participantFollowsHub]);
 
   // Real-time subcollection responses sync for active pulse
-  const isGgParticipant = Boolean(ggSession) && !ggSession.isHost;
   useEffect(() => {
     // Only the host shows results; a participant has no use for everyone else's answers.
     if (!isFirebaseConfigured || !activePulseId || isGgParticipant) return;
@@ -214,7 +226,7 @@ export function PulseProvider({ children }) {
   // Detect the host ending or deleting the active pulse in real time so a
   // connected participant mid-flow doesn't freeze on a stale screen.
   useEffect(() => {
-    if (!isFirebaseConfigured || !activePulseId) return;
+    if (!isFirebaseConfigured || !activePulseId || participantFollowsHub) return;
 
     let seenExisting = false;
     const unsubscribe = subscribeToPulseDoc(activePulseId, ({ exists, status }) => {
@@ -230,7 +242,7 @@ export function PulseProvider({ children }) {
     });
 
     return () => unsubscribe();
-  }, [activePulseId]);
+  }, [activePulseId, participantFollowsHub]);
 
   const [hubEnded, setHubEnded] = useState(false);
   const hubHostedSessionId = ggSession?.hostedSessionId || null;
@@ -246,9 +258,15 @@ export function PulseProvider({ children }) {
     return watchHubSessionStatus({
       pin: hubPin,
       hostedSessionId: hubHostedSessionId,
-      onEnded: () => setHubEnded(true),
+      onEnded: async () => {
+        if (participantFollowsHub && activePulseId) {
+          const status = await fetchPulseStatus(activePulseId);
+          if (status) setPulses((prev) => prev.map((p) => (p.id === activePulseId ? { ...p, status } : p)));
+        }
+        setHubEnded(true);
+      },
     });
-  }, [watchHub, hubPin, hubHostedSessionId]);
+  }, [watchHub, hubPin, hubHostedSessionId, participantFollowsHub, activePulseId]);
 
   // Mirrors endHostSession's Firestore update so connected participants see the ended screen.
   const hubEndHandledRef = useRef(false);
@@ -291,7 +309,8 @@ export function PulseProvider({ children }) {
       if (!code) return null;
       const clean = code.toString().trim();
       const localPick = pickPulseForPin(pulses, clean, hostedSessionId);
-      if (localPick && !isPulseEnded(localPick)) {
+      // With no listener to refresh it, a participant's stored copy can be stale, so it reads the server first.
+      if (localPick && !isPulseEnded(localPick) && !participantFollowsHub) {
         setActivePulseId(localPick.id);
         return localPick;
       }
@@ -307,7 +326,7 @@ export function PulseProvider({ children }) {
       }
       return null;
     },
-    [pulses]
+    [pulses, participantFollowsHub]
   );
 
   function showToast(msg) {
@@ -843,6 +862,11 @@ export function PulseProvider({ children }) {
           )
         );
         setCompletedPulseIds((prev) => prev.filter((x) => x !== pulseId));
+        if (err?.code === PULSE_ENDED) {
+          setPulses((prev) => prev.map((p) => (p.id === pulseId ? { ...p, status: err.status } : p)));
+          setEmpScreen('session-ended');
+          return;
+        }
         setEmpScreen((current) => (current === 'completion' ? 'question' : current));
         setSyncError("Your answers didn't send. Check your connection and submit again.");
       });
